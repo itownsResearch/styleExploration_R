@@ -114,8 +114,8 @@ function addExtrudedPolygonSideFacesWithDup(vEdges, uvsEdges, uvs, arrVertices, 
             // const uvCoordC = new Coordinates('EPSG:4978', vertices[indices[j - 3] * 3], vertices[indices[j - 3] * 3 + 1], vertices[indices[j - 3] * 3 + 2]).as('EPSG:4326');
             const uvCoordD = new Coordinates('EPSG:4978', vertices[indices[j] * 3], vertices[indices[j] * 3 + 1], vertices[indices[j] * 3 + 2]).as('EPSG:4326');
 
-            const h = 1/*uvCoordA.z - uvCoordB.z;*//* uvCoordB._values[2] - uvCoordA._values[2]*//*1*/;
-            const l = 1/*Math.sqrt((uvCoordD.x - uvCoordB.x) * (uvCoordD.x - uvCoordB.x) + (uvCoordB.y * uvCoordB.y) * (uvCoordD.y * uvCoordD.y))/*1*/;
+            const h = 1; // uvCoordA.z - uvCoordB.z;*//* uvCoordB._values[2] - uvCoordA._values[2]*//*1*/;
+            const l = 1; // Math.sqrt((uvCoordD.x - uvCoordB.x) * (uvCoordD.x - uvCoordB.x) + (uvCoordB.y * uvCoordB.y) * (uvCoordD.y * uvCoordD.y))/*1*/;
 
             uvs.push(0, h);
             uvs.push(0, 0);
@@ -146,11 +146,11 @@ function addExtrudedPolygonSideFacesWithDup(vEdges, uvsEdges, uvs, arrVertices, 
             // const uvCoordC = new Coordinates('EPSG:4978', vertices[indices[j - 3] * 3], vertices[indices[j - 3] * 3 + 1], vertices[indices[j - 3] * 3 + 2]).as('EPSG:4326');
             const uvCoordD = new Coordinates('EPSG:4978', vertices[indices[j] * 3], vertices[indices[j] * 3 + 1], vertices[indices[j] * 3 + 2]).as('EPSG:4326');
 
-            const h = 1/*uvCoordA.z - uvCoordB.z;*/// uvCoordB._values[2] - uvCoordA._values[2]*/;
-            const l = 1/*Math.sqrt((uvCoordD.x - uvCoordB.x) * (uvCoordD.x - uvCoordB.x) + (uvCoordD.y - uvCoordB.y) * (uvCoordD.y - uvCoordB.y))*/;
+            const h = 1; // * uvCoordA.z - uvCoordB.z;*/// uvCoordB._values[2] - uvCoordA._values[2] */;
+            const l = 1; // * Math.sqrt((uvCoordD.x - uvCoordB.x) * (uvCoordD.x - uvCoordB.x) + (uvCoordD.y - uvCoordB.y) * (uvCoordD.y - uvCoordB.y)) */;
 
-            //console.log("llll:", l),
-            //console.log("hhhhh:", h)
+            // console.log("llll:", l),
+            // console.log("hhhhh:", h)
             uvs.push(0, h);
             uvs.push(0, 0);
             uvs.push(l, h);
@@ -404,10 +404,10 @@ function featureToExtrudedPolygon(feature, options) {
     var verticesEdges = [];
     var uvsEdges = [];
     var altitudeRoof = [];
-    //var extrudeRoof = [];
+    // var extrudeRoof = [];
     // var altitudeEdges = [];
     var altitudeWalls = [];
-    //var extrudeWalls = [];
+    // var extrudeWalls = [];
     
     const attributeNames = options.attributes ? Object.keys(options.attributes) : [];
     for (const attributeName of attributeNames) {
@@ -467,7 +467,7 @@ function featureToExtrudedPolygon(feature, options) {
             // uvsRoofWithDup.push((c._values[0]), (c._values[1]));
             uvsRoofWithDup.push(c.latitude, c.longitude);
             altitudeRoof.push(altitude);
-            //extrudeRoof.push(extrude);
+            // extrudeRoof.push(extrude);
 
             // BatchIDS new
             if (batchIds) {
@@ -498,7 +498,7 @@ function featureToExtrudedPolygon(feature, options) {
             for (var h = 0; h < l; h++) {
                 batchIdsWalls.push(id);
                 altitudeWalls.push(altitude);
-                //extrudeWalls.push(extrude);
+                // extrudeWalls.push(extrude);
             }
         }
         if (batchIds) {
@@ -576,7 +576,7 @@ function featureToExtrudedPolygon(feature, options) {
     geom.addAttribute('position', new THREE.BufferAttribute(new Float32Array(verticesWallsWithDup), 3));
     geom.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvsWallsWithDup), 2));
     geom.addAttribute('zbottom', new THREE.BufferAttribute(new Float32Array(altitudeWalls), 1));
-    //geom.addAttribute('extru', new THREE.BufferAttribute(new Float32Array(extrudeWalls), 1));
+    // geom.addAttribute('extru', new THREE.BufferAttribute(new Float32Array(extrudeWalls), 1));
 
     if (batchIdsWalls) { geom.addAttribute('batchId', new THREE.BufferAttribute(new Float32Array(batchIdsWalls), 1)); }
     geom.computeVertexNormals();
@@ -589,13 +589,13 @@ function featureToExtrudedPolygon(feature, options) {
     geomRoof.addAttribute('position', new THREE.BufferAttribute(new Float32Array(verticesRoofWithDup), 3));
     geomRoof.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvsRoofWithDup), 2));
     geomRoof.addAttribute('zbottom', new THREE.BufferAttribute(new Float32Array(altitudeRoof), 1));
-    //geomRoof.addAttribute('extru', new THREE.BufferAttribute(new Float32Array(extrudeRoof), 1));
+    // geomRoof.addAttribute('extru', new THREE.BufferAttribute(new Float32Array(extrudeRoof), 1));
 
     if (batchIds) { geomRoof.addAttribute('batchId', new THREE.BufferAttribute(new Float32Array(batchIds), 1)); }
     geomRoof.computeVertexNormals();
     // var textureRoof = new THREE.TextureLoader().load('./textures/slatetile.jpg');
-    //var matRoof = new THREE.MeshBasicMaterial({ /* map: textureRoof, */  color: new THREE.Color(Math.random() * 0xffff00), wireframe: true });
-    const meshRoof = new THREE.Mesh(geomRoof, shadMat/* matRoof*/ );
+    // var matRoof = new THREE.MeshBasicMaterial({ /* map: textureRoof, */  color: new THREE.Color(Math.random() * 0xffff00), wireframe: true });
+    const meshRoof = new THREE.Mesh(geomRoof, shadMat); // matRoof 
     meshRoof.minAltitude = vertices.minAltitude;
 
     // EDGES
@@ -606,15 +606,15 @@ function featureToExtrudedPolygon(feature, options) {
     // if (batchIds) { geomEdges.addAttribute('batchId', new THREE.BufferAttribute(batchIds, 1)); }
     // geomEdges.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvsEdges)/*vertices*/, 2));
     // var textureEdges = new THREE.TextureLoader().load('./textures/slatetile.jpg');
-    //var matEdges = new THREE.LineBasicMaterial({ /* map:textureEdges, */ /* color: new THREE.Color(Math.random() * 0xffff00), */ });
-    //const meshEdges = new THREE.LineSegments(geomEdges, matEdges);
-   // meshEdges.minAltitude = vertices.minAltitude;
+    // var matEdges = new THREE.LineBasicMaterial({ /* map:textureEdges, */ /* color: new THREE.Color(Math.random() * 0xffff00), */ });
+    // const meshEdges = new THREE.LineSegments(geomEdges, matEdges);
+    // meshEdges.minAltitude = vertices.minAltitude;
 
 
     var meshGroup = new THREE.Group();
     meshGroup.add(mesh);
     meshGroup.add(meshRoof);
-    //meshGroup.add(meshEdges);
+    // meshGroup.add(meshEdges);
 
     // console.log('meshGroup: ', meshGroup);
     return  meshGroup; // mesh;
