@@ -1,0 +1,725 @@
+<html>
+
+    <head>
+
+        <title>Itowns - Globe + WFS</title>
+        
+            <meta charset="UTF-8">
+            <link rel="stylesheet" type="text/css" href="css/example.css">
+       <!--  <link rel="stylesheet" type="text/css" href="css/loading_screen.css"> -->
+        
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <!--  <script src="js/GUI/dat.gui/dat.gui.min.js"></script>-->
+       <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
+
+    </head>
+
+    <body>
+            <input type="file" id="files" name="files[]" multiple />
+
+        <div id="viewerDiv"></div>
+        <script src="js/GUI/GuiTools.js"></script>
+        <script src="../dist/itowns.js"></script>
+        <!-- <script src="js/loading_screen.js"></script> -->
+        <!-- <script src="js/proj4defs/3946.js"></script> -->
+        <script src="../dist/debug.js"></script>
+        <script src="js/jquery-3.3.0.js"></script>
+        
+        <script type="text/javascript">
+         var THREE = itowns.THREE;
+           
+                
+        </script>  
+
+    
+   
+        
+        <script type="text/javascript">
+  
+       
+          
+
+     
+ // predefined center of the scene (initial camera position)
+var  positionOnGlobe = { longitude:2.418159,  latitude:48.846182  , altitude: 1000 }
+var time = 5500;
+var pathTravel = [];
+var promises = [];
+//camera position based on user's geolocation
+
+
+//const coords = new itowns.Coordinates('EPSG:4326', positionn.longitude, positionn.latitude, positionn.altitude);
+//const positionOnGlobe = coords.as('EPSG:4978');
+//pathTravel.push({ range: 1393, time: time * 0.2, tilt: 7.59, heading: -110.9 });
+//pathTravel.push({ tilt: 8, time: time * 0.2 });
+            var meshes = [];
+            //to create global variables to be accessed outside the 'modifyshader' function for the purpose of defining new style 
+            var wallsArray = [];
+            var roofArray = [];
+            var edgesArray = [];
+            
+            var scaler;
+            // `viewerDiv` will contain iTowns' rendering area (`<canvas>`)
+            var viewerDiv = document.getElementById('viewerDiv');
+            // Instanciate iTowns GlobeView*
+            var options = {segments:128};  // We specify a high resolution grid (Each tile is 128* 128 * 2 triangles)
+            var view = new itowns.GlobeView(viewerDiv, positionOnGlobe, { options });
+           // setupLoadingScreen(viewerDiv, view);
+            
+            var menuGlobe = new GuiTools('menuDiv', view);
+            // Listen for globe full initialisation event
+            view.addEventListener(itowns.GLOBE_VIEW_EVENTS.GLOBE_INITIALIZED, function init() {
+                // eslint-disable-next-line no-console
+                console.info('Globe initialized');
+                view.controls.setTilt(45);
+               
+            });
+            var d = new debug.Debug(view, menuGlobe.gui);
+            debug.createTileDebugUI(menuGlobe.gui, view, view.tileLayer, d);
+            function createWMTSSourceFromConfig(config) {
+                config.source = new itowns.WMTSSource(config.source);
+                return config;
+            }
+            function addColorLayerFromConfig(config) {
+                var layer = new itowns.ColorLayer(config.id, config);
+                view.addLayer(layer).then(menuGlobe.addLayerGUI.bind(menuGlobe));
+            }
+        itowns.Fetcher.json('./layers/JSONLayers/DARK.json').then(createWMTSSourceFromConfig).then(addColorLayerFromConfig);
+
+      
+         itowns.Fetcher.json('./layers/JSONLayers/Ortho.json').then(createWMTSSourceFromConfig).then(addColorLayerFromConfig);
+          
+
+            function addElevationLayerFromConfig(config) {
+                config.source = new itowns.WMTSSource(config.source);
+                var layer = new itowns.ElevationLayer(config.id, config);
+                view.addLayer(layer).then(menuGlobe.addLayerGUI.bind(menuGlobe));
+            }
+            itowns.Fetcher.json('./layers/JSONLayers/WORLD_DTM.json').then(addElevationLayerFromConfig);
+            itowns.Fetcher.json('./layers/JSONLayers/IGN_MNT_HIGHRES.json').then(addElevationLayerFromConfig);
+            ////////////building
+            var color = new itowns.THREE.Color();
+           
+            function altitudeBuildings(properties) {
+                return properties.z_max - properties.hauteur; //properties.z_min - properties.hauteur;
+            }
+            //var extru;
+            function extrudeBuildings(properties) {
+                
+                return properties.hauteur;
+
+        
+            }
+            function acceptFeature(properties) {
+                return !!properties.hauteur;
+            }
+            scaler = function update(/* dt */) {
+                var i;
+                var mesh;
+                if (meshes.length) {
+                    view.notifyChange(view.camera.camera3D, true);
+                }
+                for (i = 0; i < meshes.length; i++) {
+                    mesh = meshes[i];
+                    if (mesh) {
+                        mesh.scale.z = Math.min(
+                            1.0, mesh.scale.z + 0.1);
+                        mesh.updateMatrixWorld(true);
+                    }
+                }
+                meshes = meshes.filter(function filter(m) { return m.scale.z < 1; });
+            };
+            view.addFrameRequester(itowns.MAIN_LOOP_EVENTS.BEFORE_RENDER, scaler);
+            
+            var wfsBuildingSource = new itowns.WFSSource({
+                url: 'https://wxs.ign.fr/3ht7xcw6f7nciopo16etuqp2/geoportail/wfs?',
+                version: '2.0.0',
+                typeName: 'BDTOPO_BDD_WLD_WGS84G:bati_remarquable,BDTOPO_BDD_WLD_WGS84G:bati_indifferencie,BDTOPO_BDD_WLD_WGS84G:bati_industriel',
+                projection: 'EPSG:4326',
+                ipr: 'IGN',
+                format: 'application/json',
+                zoom: {  min: 16, max:16 }
+            });
+            // Here we create the geometry layer for the buildings
+            // It is pretty easy to do whatever you want as you can write your own Feature2Mesh function
+            // or just tune some part of it.
+            var wfsBuildingLayer = new itowns.GeometryLayer('WFS Building', new itowns.THREE.Group(), {
+                update: itowns.FeatureProcessing.update,
+                convert: itowns.Feature2Mesh_R.convert({
+                    color: () => new THREE.Color(0xffffff),
+                    //extru: function extrudeBuildings(properties){}, 
+                    //split
+                    batchId: function (property, featureId) { const id = property.id.substring(19, property.id.length)
+                       //console.log('lol',id);
+                        return parseInt(id); },
+                        altitude: altitudeBuildings,
+                        extrude: extrudeBuildings,
+                        attributes: {
+                            color: { type: Uint8Array, value: (prop, id, extruded) => { return new THREE.Color(extruded ? 0xffffff : 0x888888);}, itemSize:3, normalized:true },
+                            //zbottom: { type: Float32Array, value: altitudeBuildings },
+                            extru: { type: Float32Array, value: extrudeBuildings},
+
+                            id: { type: Uint32Array, value: (prop, id) => { return id;},}
+                                            }}
+                ),
+                onMeshCreated: modifyShader,
+                
+                overrideAltitudeInToZero: true,
+                source: wfsBuildingSource
+            });
+            
+            
+    view.addLayer(wfsBuildingLayer);//.then(layer => delete layer.opacity);
+           
+    
+    //var arrayEdgesMeshLine1=[]; 
+
+//var arrayEdgesMeshLine1 = [];
+   function modifyShader(mesh) {
+
+            // Start with super small scale (scaling effect at load)
+            mesh.scale.z = 0.01;
+            meshes.push(mesh);
+            // Get the mesh created ( a group with 3 children)
+            // Affect the shader you created
+            var walls = mesh.children[0];
+            var roof = mesh.children[1];
+            var edges = mesh.children[2];
+            //var edgess = mesh.children[2];
+            if(walls) {
+                wallsArray.push(walls);
+                walls.material = ShadMatWalls;
+            }
+            if(roof) {
+                roofArray.push(roof);
+                roof.material = ShadMatRoof;
+            }
+
+            if(edges) {
+                edgesArray.push(edges);
+                
+                edges.material = ShadMatEdges;//in order to enable  style on the new loaded tiles
+            }
+
+
+
+
+};
+
+
+
+  
+
+
+//vertex  shaders
+const vertexShader = `
+            #include <common>
+            #include <logdepthbuf_pars_vertex>
+
+            attribute float zbottom;
+            attribute float extru;
+            attribute float batchId;
+
+
+            varying vec2 vUv;
+            uniform float time;
+            uniform vec3 currentPos;
+            varying float dist; 
+            varying float vZbottom;
+            varying float vExtru;
+
+            /*float extusion(properties) {
+                return properties.hauteur;
+
+            }*/
+
+
+            varying float vBid;
+            varying float zoomLevel;
+            mat4 aMat4 = mat4(1.0, 0.0, 0.0, 0.0,  // 1. column
+                            0.0, 1.0, 0.0, 0.0,  // 2. column
+                             0.0, 0.0, 1.0 , 0.0,  // 3. column
+                             0.0, 0.0, 0.0, 1.0);
+
+
+            void main(){
+            
+                vUv = uv;
+                //vec3 newPos = position ; // * (1. + time/10.); // mod(time, 0.001));
+                //vec4 posAbs = modelMatrix * vec4(newPos, 1.0);
+                //dist = distance(posAbs.xyz, currentPos);
+                //if(dist < 200.) posAbs.xyz *= (1. + (200. - dist)/80000000.);  // newPos += dist / 10.;
+                // Let s make like the currentPos attracts the buildings
+                // if(dist < 200.) posAbs.xyz = mix(posAbs.xyz, currentPos, 1. - dist/200.);
+                vZbottom = zbottom;
+                vExtru = extru;
+                vBid = batchId;
+                
+                //extrusion
+                if(vBid == 21908890.0 ) vExtru = (vExtru + 10.0);
+
+                //vec4 posAbs = modelMatrix * vec4(position, 1.0) ;
+                //vec4 posScaled = scalingMatrix * posAbs;
+               //if (vBid == 21908890. ) posAbs.z = posAbs.z +10.;
+                gl_Position = projectionMatrix * modelViewMatrix * aMat4 * vec4(position, 1.0); // modelViewMatrix * vec4(newPos, 1.0);
+                #include <logdepthbuf_vertex>
+            }
+            `;
+// Fragment shaders
+      
+            const fragmentShader_walls = `
+            #include <common>
+            #include <logdepthbuf_pars_fragment>
+            #define MODE_COLOR   0
+            #define MODE_TEXTURE 1
+            #define MODE_UV      2
+            #define TYP      3
+            uniform sampler2D texture_walls;
+            uniform sampler2D texture_walls1;
+            uniform sampler2D texture_walls2;
+            uniform int mode;
+          
+            uniform float texture_scale;
+            varying vec2 vUv;
+            uniform float opacity;
+            uniform float Originality;
+
+            uniform float zoomLevel;
+
+            uniform vec3 color;
+            uniform float time;
+            uniform vec3 currentPos;
+            varying float dist;
+            varying float vZbottom;
+            varying float vExtru;
+            varying float extru;
+            varying float vBid;
+
+
+        /////////////////noise
+        float random (in vec2 st) {
+    return fract(sin(dot(st.xy,
+                         vec2(12.9898,78.233)))
+                * 43758.5453123);
+}
+
+// Value noise by Inigo Quilez - iq/2013
+// https://www.shadertoy.com/view/lsf3WH
+float noise(vec2 st) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+    vec2 u = f*f*(3.0-2.0*f);
+    return mix( mix( random( i + vec2(0.0,0.0) ),
+                     random( i + vec2(1.0,0.0) ), u.x),
+                mix( random( i + vec2(0.0,1.0) ),
+                     random( i + vec2(1.0,1.0) ), u.x), u.y);
+}
+
+mat2 rotate2d(float angle){
+    return mat2(cos(angle),-sin(angle),
+                sin(angle),cos(angle));
+}
+//////contolling the scale of line patterns
+float lines(in vec2 pos, float b){
+    float scale = (zoomLevel - 14.) * (40./3.);
+    float scale2 = (zoomLevel - 20.) * (40./3.);
+
+if (zoomLevel < 17.){
+    pos *= scale;
+}
+else {
+    pos *= scale2;
+}
+   
+    return smoothstep(0.0,
+                    .5+b*.5,
+                    abs((sin(pos.x*3.1415)+b*2.0))*.5);
+}
+
+/////////////////////
+
+       
+
+
+            void main(){
+            #include <logdepthbuf_fragment>
+            
+                vec2 normUV = texture_scale * vec2(vUv.x * 100000., vUv.y);
+                if(mode == MODE_COLOR){
+                    gl_FragColor = texture2D(texture_walls, normUV);
+                } else if (mode == MODE_TEXTURE) {
+                    gl_FragColor = texture2D(texture_walls1, normUV);
+                } else if (mode == MODE_UV) {
+                    gl_FragColor = texture2D(texture_walls2, normUV);
+                } else if (mode == TYP) {
+                    gl_FragColor = vec4(color, opacity);
+                } 
+                
+
+
+             
+
+              
+               
+
+             vec2 u_resolution = vec2(1920, 1080);
+
+             vec2 st = gl_FragCoord.xy/u_resolution.xy;
+            st.y *= u_resolution.y/u_resolution.x;
+            vec2 pos = st.yx*vec2(20.,7.);
+
+            float pattern = pos.x;
+            // Add noise
+            pos = rotate2d( noise(pos) ) * pos;
+
+            // Draw lines
+            pattern = lines(pos,.01);
+
+             vec4 finalColor = vec4(vec3(pattern),1.0);
+
+              float finalOpacity;
+              if(zoomLevel < 17.){
+                finalOpacity = (zoomLevel-14.)*0.3333;
+                vec4 finalColor2 = vec4(0.395, 0.151, 0.000, 1.);
+                finalColor.rgb = mix(finalColor2.rgb, finalColor.rgb, finalOpacity);
+              }else{
+                finalOpacity = (zoomLevel-17.)*0.3333;
+                vec4 finalTexture = texture2D(texture_walls, normUV);
+                finalColor.rgb = mix(finalColor.rgb, finalTexture.rgb, finalOpacity);
+              } 
+              gl_FragColor = finalColor;
+             
+             /* if (vBid == 21908890.0){
+                  extru = extru + 100.;
+                
+              } else {
+                extru = extru;
+              }*/
+              
+
+               //gl_FragColor = vec4(vec3(rnd),1.0);
+
+                //if(dist < 200.) gl_FragColor = vec4(dist/200.,0.,0.,1.);
+                //if(dist < 200.) gl_FragColor = mix(gl_FragColor, vec4(1.,0.,0.,1.), 0.2);
+                
+                //gl_FragColor.r *= vZbottom / 50.;
+                //float hh = vUv.y *100000.0 - vZbottom ;
+               // gl_FragColor = vec4(hh, hh, hh,1.);
+            }
+            `
+            
+           
+            const fragmentShader_roof = `
+            #include <common>
+            #include <logdepthbuf_pars_fragment>
+            #define MODE_COLOR   0
+            #define MODE_TEXTURE 1
+            #define MODE_UV      2
+            #define TYP      3
+            uniform sampler2D texture_roof;
+            uniform sampler2D texture_roof1;
+            uniform sampler2D texture_roof2;
+
+            uniform int mode;
+            varying float vBid;
+
+            uniform float texture_scale;
+            varying vec2 vUv;
+            uniform float opacity;
+            uniform float Originality;
+            uniform float zoomLevel;
+
+            uniform vec3 color;
+            uniform float time;
+            uniform vec3 currentPos;
+            varying float dist;
+            varying float vZbottom;
+            varying float vExtru;
+
+            
+            void main(){
+            #include <logdepthbuf_fragment>
+            vec2 normUV = texture_scale * vUv * 400000.;
+            normUV.y *= 2.;
+            if(mode == MODE_COLOR){
+                    gl_FragColor = texture2D(texture_roof, normUV);
+                } else if (mode == MODE_TEXTURE) {
+                    gl_FragColor = texture2D(texture_roof1, normUV);
+                } else if (mode == MODE_UV) {
+                    gl_FragColor = texture2D(texture_roof2, normUV);
+                } else if (mode == TYP) {
+                    gl_FragColor = vec4(color, opacity);
+                } 
+                //if(vBid == 21908890.0){
+                //  gl_FragColor = texture2D(texture_roof, normUV);
+                // } else if (vBid == 21908934.0){ 
+                //   gl_FragColor = vec4(1.,0.,0.,0.5);//yellow
+                //   } else { 
+                //    gl_FragColor = vec4(1.,1.,0.,1.);//yellow
+                 // }
+             
+                // if(Originality < 0.5){
+                // gl_FragColor = texture2D(texture_roof, normUV);
+                //} else if (Originality < 0.99){ 
+                //     gl_FragColor = vec4(0.005,0.030,0.000,0.5);//yellow
+                // } else { 
+                //    gl_FragColor = vec4(0.180,0.098,0.001,1.);
+                // }
+
+                vec4 finalColor = vec4(0.005,0.030,0.000,1.);
+              float finalOpacity;
+              if(zoomLevel < 17.){
+                finalOpacity = (zoomLevel-14.)*0.3333;
+
+                vec4 finalColor2 = vec4(0.180,0.098,0.001,1.);
+                finalColor.rgb = mix(finalColor.rgb, finalColor2.rgb, finalOpacity);
+
+                
+              }else{
+                finalOpacity = (zoomLevel-17.)*0.3333;
+                vec4 finalTexture = texture2D(texture_roof, normUV);
+                finalColor.rgb = mix(finalColor.rgb,finalTexture.rgb, finalOpacity);
+              } 
+              gl_FragColor = finalColor;
+
+              
+                gl_FragColor.r *= vZbottom / 50.;
+                
+            }
+            `;
+            const fragmentShader_edges = `
+            #include <common>
+            #include <logdepthbuf_pars_fragment>
+            uniform float opacity;
+            uniform vec3 color;
+            uniform float time;
+            uniform vec3 currentPos;
+            varying float dist;
+            varying float vZbottom;
+            void main(){
+            #include <logdepthbuf_fragment>
+                gl_FragColor = vec4(color, opacity);
+            }
+ 
+            `;
+        //shader implementation
+
+//let time = 0;
+            let currentPos = new THREE.Vector3();
+            let texture_walls =   new THREE.TextureLoader().load("textures/wall.png");
+            let texture_walls1 = new THREE.TextureLoader().load("textures/stone-wall.jpg");
+            let texture_walls2 = new THREE.TextureLoader().load("textures/bricks.jpg");
+            let texture_roof = new THREE.TextureLoader().load("textures/roof.png");
+            let texture_roof1 = new THREE.TextureLoader().load("textures/rooftile.jpg");
+            let texture_roof2 = new THREE.TextureLoader().load("textures/smooth.jpg");
+            texture_walls.wrapS = THREE.RepeatWrapping;  // wrapS enables to repeat the texture horizontally
+            texture_walls.wrapT = THREE.RepeatWrapping;
+            texture_walls1.wrapS = THREE.RepeatWrapping;  
+            texture_walls1.wrapT = THREE.RepeatWrapping;
+            texture_walls2.wrapS = THREE.RepeatWrapping;  // wrapS enables to repeat the texture horizontally
+            texture_walls2.wrapT = THREE.RepeatWrapping;
+              // wrapT enables to repeat the texture vertically
+            texture_roof.wrapS = THREE.RepeatWrapping;
+            texture_roof.wrapT = THREE.RepeatWrapping;
+            texture_roof1.wrapS = THREE.RepeatWrapping;
+            texture_roof1.wrapT = THREE.RepeatWrapping;
+            texture_roof2.wrapS = THREE.RepeatWrapping;
+            texture_roof2.wrapT = THREE.RepeatWrapping;
+           
+
+
+function createMaterial_texture(vShader, fShader, defaultexture) {
+// Default parameters taking into account by shaders in their initial state
+let uniforms = {
+    texture_roof: {type : 'sampler2D', value : texture_roof}, 
+    texture_roof1: {type : 'sampler2D', value : texture_roof1},
+    texture_roof2: {type : 'sampler2D', value : texture_roof2}, 
+    texture_walls: {type : 'sampler2D', value : texture_walls}, // Texture for modelisation of walls
+    texture_walls1: {type : 'sampler2D', value : texture_walls1},
+    texture_walls2: {type : 'sampler2D', value : texture_walls2},
+    mode: {type: 'i', value: 0},                                // Shader mode : it's an integer between 0 and 1 : 0 = color mode, 1 = texture mode
+    texture: {type: 'sampler2D', value: defaultexture},
+    //color: {type: 'c', value: defaultColor},                    // Default color parameter
+    Originality: {type: 'f', value: 0},
+    zoomLevel: {type: 'f', value: 14},
+    extru: {type: 'f', value: 100},
+    opacity: {type: 'f', value: 1.0},                           // Default opacity parameter
+    texture_scale : {type: 'f', value: 0.03},                   // Scale factor on texture (float between 0.0 and 1.0)
+    time       : {type: 'f', value: time},                      // time to create animation
+    currentPos:  new THREE.Uniform(currentPos),                 // Current position in the trace
+   
+};
+console.log('textu', texture_roof);
+let meshMaterial = new THREE.ShaderMaterial({
+    uniforms: uniforms,
+    vertexShader: vShader,
+    fragmentShader: fShader,
+    transparent: true,
+    opacity: 0.2,
+    side: THREE.DoubleSide
+});
+return meshMaterial;
+}
+function createMaterial_color(vShader, fShader, defaultColor) {
+// Default parameters taking into account by shaders in their initial state
+let uniforms = {
+   
+    mode: {type: 'i', value: 3},                                // Shader mode : it's an integer between 0 and 1 : 0 = color mode, 1 = texture mode
+    //texture: {type: 'sampler2D', value: defaultexture},
+
+    color: {type: 'c', value: defaultColor},                    // Default color parameter
+    Originality: {type: 'f', value: 0},
+    opacity: {type: 'f', value: 1},                           // Default opacity parameter
+    texture_scale : {type: 'f', value: 0.03},                   // Scale factor on texture (float between 0.0 and 1.0)
+    time       : {type: 'f', value: time},                      // time to create animation
+    currentPos:  new THREE.Uniform(currentPos),  
+    
+};
+let meshMaterial = new THREE.ShaderMaterial({
+    uniforms: uniforms,
+    vertexShader: vShader,
+    fragmentShader: fShader,
+    transparent: true,
+    opacity: 1,
+    side: THREE.DoubleSide
+});
+return meshMaterial;
+}
+function createMaterial_opacity_wall(vShader, fShader, defaultColor) {
+// Default parameters taking into account by shaders in their initial state
+let uniforms = {
+   
+    mode: {type: 'i', value: 3},                                // Shader mode : it's an integer between 0 and 1 : 0 = color mode, 1 = texture mode
+    //texture: {type: 'sampler2D', value: defaultexture},
+    
+    color: {type: 'c', value: defaultColor},                    // Default color parameter
+    opacity: {type: 'f', value: 0.5},                           // Default opacity parameter
+    texture_scale : {type: 'f', value: 0.03},                   // Scale factor on texture (float between 0.0 and 1.0)
+    time       : {type: 'f', value: time},                      // time to create animation
+    currentPos:  new THREE.Uniform(currentPos),                 // Current position in the trace
+    
+};
+let meshMaterial = new THREE.ShaderMaterial({
+    uniforms: uniforms,
+    vertexShader: vShader,
+    fragmentShader: fShader,
+    transparent: true,
+    opacity: 0.5,
+    side: THREE.DoubleSide
+});
+return meshMaterial;
+}
+function createMaterial_opacity_roof(vShader, fShader, defaultColor) {
+// Default parameters taking into account by shaders in their initial state
+let uniforms = {
+   
+    mode: {type: 'i', value: 3},                                // Shader mode : it's an integer between 0 and 1 : 0 = color mode, 1 = texture mode
+    //texture: {type: 'sampler2D', value: defaultexture},
+
+    color: {type: 'c', value: defaultColor},                    // Default color parameter
+    opacity: {type: 'f', value: 0.8},                           // Default opacity parameter
+    texture_scale : {type: 'f', value: 0.03},                   // Scale factor on texture (float between 0.0 and 1.0)
+    time       : {type: 'f', value: time},                      // time to create animation
+    currentPos:  new THREE.Uniform(currentPos),                 // Current position in the trace
+    
+};
+let meshMaterial = new THREE.ShaderMaterial({
+    uniforms: uniforms,
+    vertexShader: vShader,
+    fragmentShader: fShader,
+    transparent: true,
+    opacity: 0.8,
+    side: THREE.DoubleSide
+});
+return meshMaterial;
+}
+ 
+
+
+var ShadMatRoof = createMaterial_texture(vertexShader, fragmentShader_roof, new THREE.Color(0Xa19f9f));
+var ShadMatRoof_ = createMaterial_color(vertexShader, fragmentShader_roof, new THREE.Color(0Xa19f9f));
+var ShadMatRoof_typ  = createMaterial_color(vertexShader, fragmentShader_roof, new THREE.Color(0X6c3527)); 
+var ShadMatRoof_dis  = createMaterial_opacity_roof(vertexShader, fragmentShader_roof, new THREE.Color(0X000000));
+var ShadMatRoof3  = createMaterial_texture(vertexShader, fragmentShader_roof/*, new THREE.TextureLoader().load("textures/roof.png")*/);    
+var ShadMatWalls = createMaterial_texture(vertexShader, fragmentShader_walls, new THREE.Color(0Xa19f9f)); 
+var ShadMatWalls_ = createMaterial_color(vertexShader, fragmentShader_walls, new THREE.Color(0Xa19f9f));
+var ShadMatWalls_ref = new THREE.MeshLambertMaterial({color:0Xffffff, side: THREE.DoubleSide });
+
+var ShadMatWalls_typ = createMaterial_color(vertexShader, fragmentShader_walls, new THREE.Color(0x270906)); 
+var ShadMatWalls_dis = createMaterial_opacity_wall(vertexShader, fragmentShader_walls, new THREE.Color(0xffffff));
+var ShadMatWalls3 = createMaterial_texture(vertexShader, fragmentShader_walls/*, new THREE.TextureLoader().load("textures/wall.png")*/);
+
+var ShadMatEdges = createMaterial_color(vertexShader, fragmentShader_edges, new THREE.Color(0Xffffff));
+var ShadMatEdges_ = createMaterial_color(vertexShader, fragmentShader_edges, new THREE.Color(0Xffffff)); 
+var ShadMatEdges_dis_dash = new THREE.LineDashedMaterial({color: 0xffffff, dashSize:1,linewidth: 100, gapSize: 3});
+var ShadMatEdges_dis_cont = createMaterial_color(vertexShader, fragmentShader_edges, new THREE.Color(0X666666));
+var ShadMatEdges_typ_dash = new THREE.LineDashedMaterial({color: 0xffffff, dashSize:1,linewidth: 100, gapSize: 3});
+
+
+ 
+var ShadMatEdges_typ_cont = createMaterial_color(vertexShader, fragmentShader_edges, new THREE.Color(0X070b12));
+
+var ShadMatEdges3 = new THREE.MeshPhongMaterial({
+    color: 0X6c3527,
+    opacity: 0,
+    transparent: true,
+  });
+
+
+  var Style_criteria = menuGlobe.gui.addFolder('style critera')
+  
+  
+  
+  /*var Originality = Style_criteria.add({Originality : 0}, 'Originality').min(0).max(1).step(0.01).name('Originality').onChange(
+      function originalityValue(value){
+        ShadMatWalls.uniforms.Originality.value = value;
+        console.log('ss', value)
+        view.notifyChange(true);
+
+      }
+      );*/
+   var Originality = Style_criteria.add({Originality : 0}, 'Originality').min(0).max(40).step(0.01).name('pattern').onChange(
+      function originalityValue(m){
+        ShadMatWalls.uniforms.Originality.value = m;
+        ShadMatRoof.uniforms.Originality.value = m;
+
+        console.log('ss', m)
+        
+        view.notifyChange(true);
+
+      }
+      );
+ 
+  //var Expressiveness = Style_criteria.add({Expressiveness : 0.5}, 'Expressiveness').min(0).max(1).step(0.01).name('Expressiveness').listen();
+  //var Decorativeness = Style_criteria.add({Decorativeness : 0.5}, 'Decorativeness').min(0).max(1).step(0.01).name('Decorativeness').listen();
+
+  var zoomLevel = Style_criteria.add({zoomLevel : 14}, 'zoomLevel').min(14).max(20).step(0.01).name('zoom').onChange(
+      function originalityValuee(d){
+        ShadMatWalls.uniforms.zoomLevel.value = d;
+        ShadMatRoof.uniforms.zoomLevel.value = d;
+        view.controls.setZoom(d)
+        view._layers[0].attachedLayers[5].opacity = (d-14)/6
+       /* view.controls.addEventListener(itowns.CONTROL_EVENTS.RANGE_CHANGED, () => {
+              view.controls.setZoom(d);
+              //console.log("dd", z);
+            });*/
+
+        view.notifyChange(true);
+
+      }
+      
+      );
+     // originalityValuee(d);
+          /*  view.controls.addEventListener(itowns.CONTROL_EVENTS.RANGE_CHANGED, () => {
+              var z = view.controls.getZoom();
+              console.log("dd", z);
+            });
+*/
+           
+
+
+        </script>
+
+    </body>
+
+</html>

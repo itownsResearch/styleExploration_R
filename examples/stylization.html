@@ -31,7 +31,7 @@
 
             var THREE = itowns.THREE;
             // Define initial camera position
-            var positionOnGlobe = { longitude: 2.24485, latitude: 48.88983, altitude: 1500 };
+            var positionOnGlobe = { longitude: 2.418159, latitude:48.846182  , altitude: 1000 };
             var meshes = [];
             var scaler;
             var waterHeightAtStart = 0.1;
@@ -233,6 +233,8 @@
                     posJelly.z += 60.;
                 }
                 vec4 posAbs = modelMatrix * vec4(posJelly, 1.0); // vec4(newPos2, 1.0);
+                
+
                 dist = dist2DLocal; //distance(posAbs.xyz, currentPos);
                 float localDist = length(position.xy);
                 float alpha = atan(position.y, position.x);
@@ -349,7 +351,7 @@
                     
                 gl_FragColor.r *= vZbottom / 50.;
                 if(dist < 200.) gl_FragColor = mix(gl_FragColor, vec4(0.,1.,0.,1.), 1. - dist / 200.); // We mix the current color with a green depending on the distance to the mouse
-                if( vZbottom < waterHeight) gl_FragColor.r *= abs(sin(time  + normUV.x ));
+                if( vZbottom < waterHeight) gl_FragColor.r *= abs(sin(time  + normUV.x * 10000000000. ));
             }
             `;
 
@@ -396,7 +398,6 @@
                     opacity: {type: 'f', value: 1.0},                           // Default opacity parameter
                     texture_scale : {type: 'f', value: 0.01},                   // Scale factor on texture (float between 0.0 and 1.0)
                     time       : {type: 'f', value: time},                      // time to create animation
-                    jellyVector  : {type: 'v2', value: jellyVector},            // directional vector and strengh for jelly effect
                     currentPos:  new THREE.Uniform(currentPos),                 // Current position in the trace
                     darkenBottom: {type: 'i', value: 1},                        // Option to darken the bottom of buildings wall
                     waterHeight: {type: 'f', value: waterHeightAtStart},        // Water height connected to the slider
@@ -515,6 +516,7 @@
                     ShadMatWalls.uniforms.currentPos.value = vec3;
                     ShadMatRoof.uniforms.currentPos.value = vec3;
                     ShadMatEdges.uniforms.currentPos.value = vec3;
+                    console.log("ffff", vec3)
                 }
             }
             

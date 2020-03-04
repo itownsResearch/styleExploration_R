@@ -92,6 +92,8 @@ GuiTools.prototype.addImageryLayerGUI = function addImageryLayerGUI(layer) {
     }).bind(this));
 };
 
+
+
 GuiTools.prototype.addElevationLayerGUI = function addElevationLayerGUI(layer) {
     if (this.elevationGui.hasFolder(layer.id)) { return; }
     this.elevationGui.show();

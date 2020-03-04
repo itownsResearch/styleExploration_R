@@ -1,0 +1,39 @@
+<html>
+
+    <head>
+
+        <title>to upload style</title>
+    </head>
+
+    <body>
+        <script src = 'js/jquery-3.3.0.js'></script>
+
+        <script>
+           
+            function doSubmit(){
+               
+                
+               $.ajax({
+                    url: 'jsonFiles/style_file.json',
+                    dataType: 'json',
+                    type: 'get',
+                    cache: false,
+                    success: function(data) {
+                       /* $(data.stylesvv).each(function(index, value){
+                            console.log(value);
+                        });*/
+                        console.log(data.stylesvv[2].name);
+                       
+
+                    },
+                    error:function() {
+                    alert("Error")                  
+                    }
+                });
+            }
+        </script>
+       
+        <button type="button" onclick="doSubmit()">Submit</button>
+    </body>
+
+</html>
