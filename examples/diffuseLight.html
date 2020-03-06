@@ -254,42 +254,8 @@ const vertexShader = `
                 dist = distance(posEx.xyz, LandMarkPositionLocal);
 
                
-               /* if (vBid == 15936696. ){
-                    if (vUv.y == 0.){
-                         
-                        posEx.z = posEx.z;
-                         
-                    } 
-                    else {
-                        if (check == 0.){
-                            
-        
-                                posEx.z = posEx.z + 0.125 * (distan - 300.);
-                            
-                            
-                        }
-                        else {
-                            posEx.z = posEx.z + extrusion;
-                        }
-
-                    }
-                    posEx.xy =  posEx.xy;
-
-                }
-                else{
-                    //if(dist < 200.) { /*just building in the 200m buffer are displaced*/
-                        if (check == 0.){
-                            
-
-                                posEx.xy +=  (distan - 300.)* 0.08333 * vecDir.xy;
-                        
-                        }
-                        else {
-                            posEx.xy += displacement * vecDir.xy ;
-                        }
-                    //}
-                }*/
-               
+            
+                   
                 gl_Position = projectionMatrix * modelViewMatrix * posEx; // modelViewMatrix * vec4(newPos, 1.0);
                 #include <logdepthbuf_vertex>
             }
