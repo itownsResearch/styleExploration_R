@@ -1,7 +1,113 @@
 <html>
 
     <head>
+        <style>
+            /* Measurement dialogbox style*/
+            #white-background{
+                display: none;
+                width: 100%;
+                height: 100%;
+                position: fixed;
+                top: 0px;
+                left: 0px;
+                background-color: #fefefe;
+                opacity: 0.3;
+                z-index: 9999;
+            }
+            #dlgbox{
+                /* initial dialogbox display is hidden */
+                display: none;
+                position: fixed;
+                width: 480px;
+                z-index: 9999;
+                border-radius: 2px;
+                background-color: #7c7d7e;
+            }
+            #dlg-header{
+                background-color: #6d84b4;
+                color: white;
+                font-size: 20px;
+                padding: 10px;
+                margin: 10px 10px 0px 10px;
+            }
+            #dlg-body{
+                background-color: white;
+                color: black;
+                font-size: 14px;
+                padding: 10px;
+                margin: 0px 10px 0px 10px;
+            }
+            #dlg-footer{
+                background-color: #f2f2f2;
+                text-align: right;
+                padding: 10px;
+                margin: 0px 10px 10px 10px;
+            }
+            #dlg-footer button{
+                background-color: #6d84b4;
+                color: white;
+                padding: 5px;
+                border: 0px;
 
+            }
+            .white-background{
+                width: 100%;
+                height: 100%;
+                position: fixed;
+                top: 0px;
+                left: 0px;
+                background-color: #fefefe;
+                opacity: 0.3;
+                z-index: 9999;
+            }
+            .dlg-header{
+                background-color: #6d84b4;
+                color: white;
+                font-size: 20px;
+                padding: 5px;
+                margin: 10px 10px 0px 10px;
+            }
+            .dlgbox{
+                /* display: none; */
+                position: fixed;
+                width: 200px;
+                height: 200px;
+                z-index: 9999;
+                border-radius: 2px;
+                background-color: #7c7d7e;
+                /*opacity: 0.7;*/
+                bottom: 5px;
+                right: 5px;
+            }
+            .dlgbox .dlg-body ul {
+                margin: 0;
+                margin-bottom: 5px;
+                padding: 0;
+                float: left;
+                list-style: none;
+            }
+            .dlgbox .dlg-body ul li {
+                font-size: 80%;
+                list-style: none;
+                margin-left: 10px;
+                line-height: 18px;
+                margin-top: 10px;
+                margin-bottom: 8px;
+                font-size: 13px;
+                font-weight: bold;
+                font-family: Tahoma;
+            }
+            .dlgbox ul.legend-labels li span {
+                display: block;
+                float: left;
+                height: 20px;
+                width: 70px;
+                margin-right: 5px;
+                margin-left: 0;
+                margin-top: 5px;
+                /*border: 1px solid #999;*/
+            }
+        </style>
         <title>Style Exploration</title>
         <meta charset="UTF-8">
         <link rel="stylesheet" type="text/css" href="css/example.css">
@@ -12,27 +118,56 @@
     </head>
 
     <body>
+        <div class ="dlgbox">
+            <div class="dlg-header"> <center>Legend</center></div>
+            <div class="dlg-body">
+                <ul class='legend-labels'>
+                    <li class="class"><span style='background:#ffffff;'></span><span>Class 1</span></li>
+                    <li class="class"><span style='background:#ffffff;'></span><span>Class 1</span></li>
+                    <li class="class"><span style='background:#ffffff;'></span><span>Class 1</span></li>
+                    <li class="class"><span style='background:#ffffff;'></span><span>Class 1</span></li>
+                    <li class="class"><span style='background:#ffffff;'></span><span>Class 1</span></li>
+                  </ul>
+            </div>
+            
+        </div>
+
+
+
+
+         <!--for measurement dialogbox--> 
+        <div id="white-background">
+        </div>
+       
+        <div id ="dlgbox">
+            <div id="dlg-header"> </div>
+            <div id="dlg-body"></div>
+            <div id="dlg-footer">
+                <button onclick="Exit()">Close</button>
+            </div>
+        </div>
+        <!----------->        
+
         <div id="viewerDiv"></div> 
         <script src="js/GUI/GuiTools.js"></script>
         <script src="../dist/itowns.js"></script>  
         <script src="js/GUI/LoadingScreen.js"></script>
-       <script src="../dist/debug.js"></script>
+       
         <script src="js/jquery-3.3.0.js"></script>
         <script type="text/javascript">
             var THREE = itowns.THREE;  
         </script>  
-        
+        <script src="js/THREE.MeshLine.js"></script>
         <script type="text/javascript">
 
             var viewerDiv = document.getElementById('viewerDiv');
-            var positionOnGlobe = { longitude:2.418159,  latitude:48.846182  , altitude: 1000 };
+            var positionOnGlobe = { longitude:2.418159, latitude:48.846182 , altitude: 1000 };
             var options = {segments:128}; 
             var view = new itowns.GlobeView(viewerDiv, positionOnGlobe, { options });
             var menuGlobe = new GuiTools('menuDiv', view);
             view.addEventListener(itowns.GLOBE_VIEW_EVENTS.GLOBE_INITIALIZED, function init() {
                 console.info('Globe initialized');
                 view.controls.setTilt(45);
-               
             });
             view.controls.zoomSpeed = 0.5;
             function createWMTSSourceFromConfig(config) {
@@ -43,20 +178,20 @@
                 var layer = new itowns.ColorLayer(config.id, config);
                 view.addLayer(layer).then(menuGlobe.addLayerGUI.bind(menuGlobe));
             }
-            itowns.Fetcher.json('./layers/JSONLayers/DARK.json').then(createWMTSSourceFromConfig).then(addColorLayerFromConfig);
 
-      
+            itowns.Fetcher.json('./layers/JSONLayers/DARK.json').then(createWMTSSourceFromConfig).then(addColorLayerFromConfig);
             itowns.Fetcher.json('./layers/JSONLayers/Ortho.json').then(createWMTSSourceFromConfig).then(addColorLayerFromConfig);
-          
 
             function addElevationLayerFromConfig(config) {
                 config.source = new itowns.WMTSSource(config.source);
                 var layer = new itowns.ElevationLayer(config.id, config);
                 view.addLayer(layer).then(menuGlobe.addLayerGUI.bind(menuGlobe));
             }
+            
             itowns.Fetcher.json('./layers/JSONLayers/WORLD_DTM.json').then(addElevationLayerFromConfig);
             itowns.Fetcher.json('./layers/JSONLayers/IGN_MNT_HIGHRES.json').then(addElevationLayerFromConfig);
-////////////building////////////:
+            
+            //////////// building ////////////
             var color = new itowns.THREE.Color();
     
             function altitudeBuildings(properties) {
@@ -64,13 +199,10 @@
             }
             function extrudeBuildings(properties) {
                 return properties.hauteur;
-
-
             }
 
             function acceptFeature(properties) { 
-
-            return !!properties.hauteur;
+                return !!properties.hauteur;
             }
 
             
@@ -185,30 +317,25 @@
                 vUv = uv;
                 vec3 newPos = position; 
                 vec4 posAbs = modelMatrix * vec4(newPos, 1.0);
-                vec4 posFinal = vec4(position, 1.0) ;
+                vec4 posFinal = vec4(position, 1.0);
                 vZbottom = zbottom;
-               // a1 = ((posAbs.x * P1.y)-(posAbs.y * P1.x)+ (P1.x * P2.y)-(P1.y * P2.x)+ (P2.x * posAbs.y )-(P2.y * posAbs.x ));
-               // a2 = ((posAbs.x * P2.y)-(posAbs.y * P2.x)+ (P2.x * P3.y)-(P2.y * P3.x)+ (P3.x * posAbs.y )-(P3.y * posAbs.x ));
-               // a3 = ((posAbs.x * P3.y)-(posAbs.y * P3.x)+ (P3.x * P4.y)-(P3.y * P4.x)+ (P4.x * posAbs.y )-(P4.y * posAbs.x ));
-              //  a4 = ((posAbs.x * P4.y)-(posAbs.y * P4.x)+ (P4.x * P1.y)-(P4.y * P1.x)+ (P1.x * posAbs.y )-(P1.y * posAbs.x ));
-              //  sumArea = a1+a2+a3+a4;
+               
                 distCentralPosBuffer = distance(posAbs.xyz, centralPosBuffer);
                 if (posAbs.x < Xmin || posAbs.x > Xmax || posAbs.y < Ymin || posAbs.y > Ymax || posAbs.z < Zmin || posAbs.z > Zmax) {
                     // Definitely not within the polygon!
-                   
-                   bufferCondition = 0.;
+                    bufferCondition = 0.;
                 }
                 else {
                     bufferCondition = 1.;
-                                    
-                    }
+                }
+
                 gl_Position = projectionMatrix *  modelViewMatrix * posFinal; // vec4(newPos, 1.0); // modelViewMatrix * vec4(newPos, 1.0);
                 #include <logdepthbuf_vertex>
             }
             `;
 
 
-////////////////////////////////////////////////////////////////////////////////////// FRAGMENT SHADERS ////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////// FRAGMENT SHADERS ////////////////////////////////////////////////////////////////////////////////////
 
 
             const fragmentShader_walls = `
@@ -247,6 +374,16 @@
             uniform vec3 class3;
             uniform vec3 class4;
             uniform vec3 class5;
+            uniform float PointLine1;
+            uniform float PointLine2;
+            uniform float PointDiameter1;
+            uniform float PointDiameter2;
+            uniform float PointDiameter3;
+            uniform float PointDiameter4;
+            uniform float PointArea1;
+            uniform float PointArea2;
+            uniform float PointArea3;
+            uniform float PointArea4;
 
 
 
@@ -268,12 +405,17 @@
                         }
                         else if(vZbottom < queryZbottomMin+(3. * interval) && vZbottom > queryZbottomMin+(2. * interval)){
                             gl_FragColor = vec4(class3, 1.);  
+                            //float blend = smoothstep(0.2, 0.3 , vUv.x);
+                            //gl_FragColor = mix(vec4(class3, 1.0), vec4(class4, 1.0),blend );  
                         }
                         else if(vZbottom < queryZbottomMin+(4. * interval) && vZbottom > queryZbottomMin+(3. * interval)){
                             gl_FragColor = vec4(class4, 1.);  
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
+                        }
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
                         }
                     
                     }
@@ -293,6 +435,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         }  
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }
                     }
                     else if (paletteNo == 2.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -309,7 +454,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }  
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }  
                     }
                     else if (paletteNo == 3.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -326,7 +474,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }   
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        } 
                     }
                     else if (paletteNo == 4.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -343,7 +494,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }  
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }  
                     }
                     else if (paletteNo == 5.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -360,7 +514,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }  
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }  
                     }
                     else if (paletteNo == 6.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -378,6 +535,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }
                     }
                     else if (paletteNo == 7.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -394,7 +554,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }  
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }  
                     }
                     else if (paletteNo == 8.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -411,7 +574,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }  
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }  
                     }
                     else if (paletteNo == 9.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -429,6 +595,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }
                     }
                     else if (paletteNo == 10.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -446,6 +615,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }
                     }
                     else if (paletteNo == 11.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -463,6 +635,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }
                     }
                 }
                 //////////////// Stylization of Building in Circle ROI using Color Palettes /////////:
@@ -484,6 +659,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         }
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }
                     
                     }
                     else if (paletteNo == 1.){
@@ -502,6 +680,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         }  
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }
                     }
                     else if (paletteNo == 2.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -518,7 +699,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }  
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }  
                     }
                     else if (paletteNo == 3.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -535,7 +719,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }  
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }  
                     }
                     else if (paletteNo == 4.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -552,7 +739,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }  
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }  
                     }
                     else if (paletteNo == 5.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -569,7 +759,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }   
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        } 
                     }
                     else if (paletteNo == 6.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -587,6 +780,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }
                     }
                     else if (paletteNo == 7.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -603,7 +799,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }   
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        } 
                     }
                     else if (paletteNo == 8.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -620,7 +819,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }   
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        } 
                     }
                     else if (paletteNo == 9.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -638,6 +840,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }
                     }
                     else if (paletteNo == 10.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -655,6 +860,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }
                     }
                     else if (paletteNo == 11.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -672,6 +880,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                        }
                     } 
                 }
                 else {
@@ -744,6 +955,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         }
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     
                     }
                     else if (paletteNo == 1.){
@@ -762,6 +976,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         }  
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     }
                     else if (paletteNo == 2.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -778,7 +995,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }  
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }  
                     }
                     else if (paletteNo == 3.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -795,7 +1015,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }  
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }  
                     }
                     else if (paletteNo == 4.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -813,6 +1036,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         }    
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     }
                     else if (paletteNo == 5.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -830,6 +1056,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         }    
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     }
                     else if (paletteNo == 6.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -847,6 +1076,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     }
                     else if (paletteNo == 7.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -863,7 +1095,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }   
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        } 
                     }
                     else if (paletteNo == 8.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -880,7 +1115,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }   
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        } 
                     }
                     else if (paletteNo == 9.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -898,6 +1136,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     }
                     else if (paletteNo == 10.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -915,6 +1156,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     }
                     else if (paletteNo == 11.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -932,6 +1176,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     }
                 }
                 //////////////// Stylization of Building in Circle ROI using Color Palettes /////////:
@@ -953,6 +1200,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         }
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     
                     }
                     else if (paletteNo == 1.){
@@ -971,6 +1221,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         }  
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     }
                     else if (paletteNo == 2.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -988,6 +1241,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         }    
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     }
                     else if (paletteNo == 3.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -1004,7 +1260,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }   
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        } 
                     }
                     else if (paletteNo == 4.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -1021,7 +1280,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }  
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }  
                     }
                     else if (paletteNo == 5.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -1038,7 +1300,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }   
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        } 
                     }
                     else if (paletteNo == 6.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -1056,6 +1321,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     }
                     else if (paletteNo == 7.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -1072,7 +1340,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }   
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        } 
                     }
                     else if (paletteNo == 8.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -1089,7 +1360,10 @@
                         }
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
-                        }    
+                        }   
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        } 
                     }
                     else if (paletteNo == 9.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -1107,6 +1381,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     }
                     else if (paletteNo == 10.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -1124,6 +1401,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     }
                     else if (paletteNo == 11.){
                         if(vZbottom < queryZbottomMin+interval){
@@ -1141,6 +1421,9 @@
                         else if(vZbottom > queryZbottomMin+(4. * interval)){
                             gl_FragColor = vec4(class5, 1.);  
                         } 
+                        else{
+                            gl_FragColor = vec4(1., 1., 1., 1.);
+                        }
                     } 
                 }
                 else {
@@ -1187,6 +1470,17 @@
             let P2 = new THREE.Vector3();
             let P3 = new THREE.Vector3();
             let P4 = new THREE.Vector3();
+            let PointLine1 = new THREE.Vector3();
+            let PointLine2 = new THREE.Vector3();
+            let PointDiameter1 = new THREE.Vector3();
+            let PointDiameter2 = new THREE.Vector3();
+            let PointDiameter3 = new THREE.Vector3();
+            let PointDiameter4 = new THREE.Vector3();
+            let PointArea1 = new THREE.Vector3();
+            let PointArea2 = new THREE.Vector3();
+            let PointArea3 = new THREE.Vector3();
+            let PointArea4 = new THREE.Vector3();
+
             ////////////// Central point of circular buffer //////////
             let centralPosBuffer = new THREE.Vector3();
            ////////////////////////////////
@@ -1200,6 +1494,17 @@
                     P2:  new THREE.Uniform(P2), 
                     P3:  new THREE.Uniform(P3), 
                     P4:  new THREE.Uniform(P4), 
+                    PointLine1: new THREE.Uniform(PointLine1),
+                    PointLine2: new THREE.Uniform(PointLine2),
+                    PointDiameter1: new THREE.Uniform(PointDiameter1),
+                    PointDiameter2: new THREE.Uniform(PointDiameter2),
+                    PointDiameter3: new THREE.Uniform(PointDiameter3),
+                    PointDiameter4: new THREE.Uniform(PointDiameter4),
+                    PointArea1: new THREE.Uniform(PointArea1),
+                    PointArea2: new THREE.Uniform(PointArea2),
+                    PointArea3: new THREE.Uniform(PointArea3),
+                    PointArea4: new THREE.Uniform(PointArea4),
+
                     Xmin: {type: 'f', value: 0},
                     Xmax: {type: 'f', value: 0},
                     Ymin: {type: 'f', value: 0},
@@ -1325,7 +1630,9 @@
             var text = new bufferPolygon();
             var ROI = menuGlobe.gui.addFolder('ROI');
             var polygonBuffer = ROI.addFolder('Polygon')
+    
             polygonBuffer.add(text, 'SelectVertices');
+          
             var deleteBufferPolygon = function() { 
                 this.deleteVertices = function ssss() { 
                     ShadMatWalls.uniforms.P1.value.set(0,0,0);
@@ -1342,32 +1649,37 @@
             var textt = new deleteBufferPolygon();
             polygonBuffer.add(textt, 'deleteVertices');
             ///////////// Circle ROI ////////////////
-            var circleBuffer = function() { 
-                this.SelectCenter = function ssss() { 
-                    var count = -1;
-                    window.onclick = function picking(event) {
-                        count++;
-                        var intersects = view.pickObjectsAt(event, 2, 'WFS Building');
-            
-                        if (intersects.length) {
-                            //////////////getting the position of building by clicking on them
-                            var vec3 = new THREE.Vector3();//pickingBuildings(event);  // Here you can call pickingBuildings if you want!
-                               // if(vec3.z == 0){
-                                   if(count==1){
-                                    geoposition = view.controls.pickGeoPosition(new itowns.THREE.Vector2(event.pageX,event.pageY));
-                                    let converted = geoposition.as('EPSG:4978'); 
-                                    vec3 = new THREE.Vector3(converted.x, converted.y, converted.z);
-                                    ShadMatWalls.uniforms.centralPosBuffer.value = vec3;
-                                    ShadMatRoof.uniforms.centralPosBuffer.value = vec3;
-                                    console.log("center", vec3);
-                                }
-                            
+           
+                    var circleBuffer = function() { 
+                        this.SelectCenter = function ssss() { 
+                           
+                            var count = -1;
+                            window.onclick = function picking(event) {
+                                count++;
+                                var intersects = view.pickObjectsAt(event, 2, 'WFS Building');
                     
+                                if (intersects.length) {
+                                    //////////////getting the position of building by clicking on them
+                                    var vec3 = new THREE.Vector3();//pickingBuildings(event);  // Here you can call pickingBuildings if you want!
+                                    // if(vec3.z == 0){
+                                        if(count==1){
+                                            geoposition = view.controls.pickGeoPosition(new itowns.THREE.Vector2(event.pageX,event.pageY));
+                                            let converted = geoposition.as('EPSG:4978'); 
+                                            vec3 = new THREE.Vector3(converted.x, converted.y, converted.z);
+                                            ShadMatWalls.uniforms.centralPosBuffer.value = vec3;
+                                            ShadMatRoof.uniforms.centralPosBuffer.value = vec3;
+                                            console.log("center", vec3);
+                                        }
+                                    
+                            
+                                }
+                            }
+              
                         }
+        
                     }
-                }
-   
-            };
+         
+            
             var circle = ROI.addFolder('Circle');
             var texttt = new circleBuffer();
             circle.add(texttt, 'SelectCenter');
@@ -1413,6 +1725,39 @@
                 }
             
             );
+            //////////// classification interval change on map legend
+            view.addEventListener(itowns.GLOBE_VIEW_EVENTS.GLOBE_INITIALIZED, function () {
+                view.addFrameRequester(itowns.MAIN_LOOP_EVENTS.AFTER_RENDER, () => {
+                   
+                    var spanArray = document.getElementsByTagName('span');
+                var number_spans = spanArray.length ;
+                numberOfClasses = 5;
+                interval = ((ShadMatWalls.uniforms.queryZbottomMax.value)-(ShadMatWalls.uniforms.queryZbottomMin.value))/5;
+                for( var i = 0; i < number_spans ; i++ ){
+
+                    var interval1 = spanArray[1]
+                    var interval2 = spanArray[3]
+                    var interval3 = spanArray[5]
+                    var interval4 = spanArray[7]
+                    var interval5 = spanArray[9]
+                    interval1.innerText = ShadMatWalls.uniforms.queryZbottomMin.value + "-"+ ((ShadMatWalls.uniforms.queryZbottomMin.value)+interval);
+                    interval2.innerText = ((ShadMatWalls.uniforms.queryZbottomMin.value)+interval) + "-"+ ((ShadMatWalls.uniforms.queryZbottomMin.value)+(2*interval));
+                    interval3.innerText = ((ShadMatWalls.uniforms.queryZbottomMin.value)+(2*interval)) + "-"+ ((ShadMatWalls.uniforms.queryZbottomMin.value)+(3*interval))
+                    interval4.innerText = ((ShadMatWalls.uniforms.queryZbottomMin.value)+(3*interval)) + "-"+ ((ShadMatWalls.uniforms.queryZbottomMin.value)+(4*interval))
+                    interval5.innerText = ((ShadMatWalls.uniforms.queryZbottomMin.value)+(4*interval)) + "-"+ ((ShadMatWalls.uniforms.queryZbottomMin.value)+(5*interval))
+
+                }
+
+                
+
+               
+                view.notifyChange(true);
+             
+                });
+         
+            });
+
+
             ///////////// Color Palette Selection //////////
             var Style_criteria = menuGlobe.gui.addFolder('Stylization')
             var colorPalettes = Style_criteria.addFolder('colorPalette')
@@ -1420,6 +1765,7 @@
                 palette: 'YlGn',
             }; 
             var palette = colorPalettes.add(options, 'palette', [ "YlGn", "YlGnBu", "GnBu", "BuGn", "PuBuGn", "PuBu", "BuPu", "RdPu", "PuRd", "OrRd", "YlOrRd", "YlOrBr"]).name('palettes').listen();
+           
             var a = palette.onChange(() => {
                 if (options.palette==='YlGn'){
                     class1 = new THREE.Color(colorbrewer.YlGn[5][0]);
@@ -1442,6 +1788,32 @@
                     ShadMatWalls.uniforms.paletteNo.value = 0;
                     ShadMatRoof.uniforms.paletteNo.value = 0;
                     view.notifyChange();
+                     /////////// Interactive change of legend color ///////////:
+                    var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length ;
+
+                    for( var i = 0; i < number_spans ; i++ ){
+                       
+                            var target0 = spanArray[0] ; // first pan tag
+                            var target2 = spanArray[2] ;
+                            var target4 = spanArray[4] ;
+                            var target6 = spanArray[6] ;
+                            var target8 = spanArray[8] ;
+
+
+                            target0.style.background = colorbrewer.YlGn[5][0]
+                            target2.style.background = colorbrewer.YlGn[5][1]
+                            target4.style.background = colorbrewer.YlGn[5][2]
+                            target6.style.background = colorbrewer.YlGn[5][3]
+                            target8.style.background = colorbrewer.YlGn[5][4]
+
+
+                            var m = spanArray[1]
+                            var n = spanArray[3]
+                            m.innerText = "yo";
+                            n.innerText = "foo"
+
+                    }
                 }
                 else if (options.palette==='YlGnBu'){
                     class1 = new THREE.Color(colorbrewer.YlGnBu[5][0]);
@@ -1463,6 +1835,32 @@
                     ShadMatRoof.uniforms.class5.value = class5;
                     ShadMatWalls.uniforms.paletteNo.value = 1;
                     ShadMatRoof.uniforms.paletteNo.value = 1;
+                     /////////// Interactive change of legend color ///////////:
+                     var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length ;
+
+                    for( var i = 0; i < number_spans ; i++ ){
+                       
+                            var target0 = spanArray[0] ; // first pan tag
+                            var target2 = spanArray[2] ;
+                            var target4 = spanArray[4] ;
+                            var target6 = spanArray[6] ;
+                            var target8 = spanArray[8] ;
+
+
+                            target0.style.background = colorbrewer.YlGnBu[5][0]
+                            target2.style.background = colorbrewer.YlGnBu[5][1]
+                            target4.style.background = colorbrewer.YlGnBu[5][2]
+                            target6.style.background = colorbrewer.YlGnBu[5][3]
+                            target8.style.background = colorbrewer.YlGnBu[5][4]
+
+
+                            var m = spanArray[1]
+                            var n = spanArray[3]
+                            m.innerText = "yo";
+                            n.innerText = "foo"
+
+                    }
                     view.notifyChange();
                 }
                 else if (options.palette==='GnBu'){
@@ -1485,6 +1883,32 @@
                     ShadMatRoof.uniforms.class5.value = class5;
                     ShadMatWalls.uniforms.paletteNo.value = 2;
                     ShadMatRoof.uniforms.paletteNo.value = 2;
+                    /////////// Interactive change of legend color ///////////:
+                    var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length ;
+
+                    for( var i = 0; i < number_spans ; i++ ){
+                       
+                            var target0 = spanArray[0] ; // first pan tag
+                            var target2 = spanArray[2] ;
+                            var target4 = spanArray[4] ;
+                            var target6 = spanArray[6] ;
+                            var target8 = spanArray[8] ;
+
+
+                            target0.style.background = colorbrewer.GnBu[5][0]
+                            target2.style.background = colorbrewer.GnBu[5][1]
+                            target4.style.background = colorbrewer.GnBu[5][2]
+                            target6.style.background = colorbrewer.GnBu[5][3]
+                            target8.style.background = colorbrewer.GnBu[5][4]
+
+
+                            var m = spanArray[1]
+                            var n = spanArray[3]
+                            m.innerText = "yo";
+                            n.innerText = "foo"
+
+                    }
                     view.notifyChange();
                 }
                 else if (options.palette==='BuGn'){
@@ -1507,6 +1931,32 @@
                     ShadMatRoof.uniforms.class5.value = class5;
                     ShadMatWalls.uniforms.paletteNo.value = 3;
                     ShadMatRoof.uniforms.paletteNo.value = 3;
+                     /////////// Interactive change of legend color ///////////:
+                     var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length ;
+
+                    for( var i = 0; i < number_spans ; i++ ){
+                       
+                            var target0 = spanArray[0] ; // first pan tag
+                            var target2 = spanArray[2] ;
+                            var target4 = spanArray[4] ;
+                            var target6 = spanArray[6] ;
+                            var target8 = spanArray[8] ;
+
+
+                            target0.style.background = colorbrewer.BuGn[5][0]
+                            target2.style.background = colorbrewer.BuGn[5][1]
+                            target4.style.background = colorbrewer.BuGn[5][2]
+                            target6.style.background = colorbrewer.BuGn[5][3]
+                            target8.style.background = colorbrewer.BuGn[5][4]
+
+
+                            var m = spanArray[1]
+                            var n = spanArray[3]
+                            m.innerText = "yo";
+                            n.innerText = "foo"
+
+                    }
                     view.notifyChange();
                 }
                 else if (options.palette==='PuBuGn'){
@@ -1529,6 +1979,32 @@
                     ShadMatRoof.uniforms.class5.value = class5;
                     ShadMatWalls.uniforms.paletteNo.value = 4;
                     ShadMatRoof.uniforms.paletteNo.value = 4;
+                    /////////// Interactive change of legend color ///////////:
+                    var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length ;
+
+                    for( var i = 0; i < number_spans ; i++ ){
+                       
+                            var target0 = spanArray[0] ; // first pan tag
+                            var target2 = spanArray[2] ;
+                            var target4 = spanArray[4] ;
+                            var target6 = spanArray[6] ;
+                            var target8 = spanArray[8] ;
+
+
+                            target0.style.background = colorbrewer.PuBuGn[5][0]
+                            target2.style.background = colorbrewer.PuBuGn[5][1]
+                            target4.style.background = colorbrewer.PuBuGn[5][2]
+                            target6.style.background = colorbrewer.PuBuGn[5][3]
+                            target8.style.background = colorbrewer.PuBuGn[5][4]
+
+
+                            var m = spanArray[1]
+                            var n = spanArray[3]
+                            m.innerText = "yo";
+                            n.innerText = "foo"
+
+                    }
                     view.notifyChange();
                 }
                 else if (options.palette==='PuBu'){
@@ -1551,6 +2027,32 @@
                     ShadMatRoof.uniforms.class5.value = class5;
                     ShadMatWalls.uniforms.paletteNo.value = 5;
                     ShadMatRoof.uniforms.paletteNo.value = 5;
+                    /////////// Interactive change of legend color ///////////:
+                    var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length ;
+
+                    for( var i = 0; i < number_spans ; i++ ){
+                       
+                            var target0 = spanArray[0] ; // first pan tag
+                            var target2 = spanArray[2] ;
+                            var target4 = spanArray[4] ;
+                            var target6 = spanArray[6] ;
+                            var target8 = spanArray[8] ;
+
+
+                            target0.style.background = colorbrewer.PuBu[5][0]
+                            target2.style.background = colorbrewer.PuBu[5][1]
+                            target4.style.background = colorbrewer.PuBu[5][2]
+                            target6.style.background = colorbrewer.PuBu[5][3]
+                            target8.style.background = colorbrewer.PuBu[5][4]
+
+
+                            var m = spanArray[1]
+                            var n = spanArray[3]
+                            m.innerText = "yo";
+                            n.innerText = "foo"
+
+                    }
                     view.notifyChange();
                 }
                 else if (options.palette==='BuPu'){
@@ -1573,6 +2075,32 @@
                     ShadMatRoof.uniforms.class5.value = class5;
                     ShadMatWalls.uniforms.paletteNo.value = 6;
                     ShadMatRoof.uniforms.paletteNo.value = 6;
+                    /////////// Interactive change of legend color ///////////:
+                    var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length ;
+
+                    for( var i = 0; i < number_spans ; i++ ){
+                       
+                            var target0 = spanArray[0] ; // first pan tag
+                            var target2 = spanArray[2] ;
+                            var target4 = spanArray[4] ;
+                            var target6 = spanArray[6] ;
+                            var target8 = spanArray[8] ;
+
+
+                            target0.style.background = colorbrewer.BuPu[5][0]
+                            target2.style.background = colorbrewer.BuPu[5][1]
+                            target4.style.background = colorbrewer.BuPu[5][2]
+                            target6.style.background = colorbrewer.BuPu[5][3]
+                            target8.style.background = colorbrewer.BuPu[5][4]
+
+
+                            var m = spanArray[1]
+                            var n = spanArray[3]
+                            m.innerText = "yo";
+                            n.innerText = "foo"
+
+                    }
                     view.notifyChange();
                 }
                 else if (options.palette==='RdPu'){
@@ -1595,6 +2123,32 @@
                     ShadMatRoof.uniforms.class5.value = class5;
                     ShadMatWalls.uniforms.paletteNo.value = 7;
                     ShadMatRoof.uniforms.paletteNo.value = 7;
+                    /////////// Interactive change of legend color ///////////:
+                    var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length ;
+
+                    for( var i = 0; i < number_spans ; i++ ){
+                       
+                            var target0 = spanArray[0] ; // first pan tag
+                            var target2 = spanArray[2] ;
+                            var target4 = spanArray[4] ;
+                            var target6 = spanArray[6] ;
+                            var target8 = spanArray[8] ;
+
+
+                            target0.style.background = colorbrewer.RdPu[5][0]
+                            target2.style.background = colorbrewer.RdPu[5][1]
+                            target4.style.background = colorbrewer.RdPu[5][2]
+                            target6.style.background = colorbrewer.RdPu[5][3]
+                            target8.style.background = colorbrewer.RdPu[5][4]
+
+
+                            var m = spanArray[1]
+                            var n = spanArray[3]
+                            m.innerText = "yo";
+                            n.innerText = "foo"
+
+                    }
                     view.notifyChange();
                 }
                 else if (options.palette==='PuRd'){
@@ -1617,6 +2171,32 @@
                     ShadMatRoof.uniforms.class5.value = class5;
                     ShadMatWalls.uniforms.paletteNo.value = 8;
                     ShadMatRoof.uniforms.paletteNo.value = 8;
+                    /////////// Interactive change of legend color ///////////:
+                    var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length ;
+
+                    for( var i = 0; i < number_spans ; i++ ){
+                       
+                            var target0 = spanArray[0] ; // first pan tag
+                            var target2 = spanArray[2] ;
+                            var target4 = spanArray[4] ;
+                            var target6 = spanArray[6] ;
+                            var target8 = spanArray[8] ;
+
+
+                            target0.style.background = colorbrewer.PuRd[5][0]
+                            target2.style.background = colorbrewer.PuRd[5][1]
+                            target4.style.background = colorbrewer.PuRd[5][2]
+                            target6.style.background = colorbrewer.PuRd[5][3]
+                            target8.style.background = colorbrewer.PuRd[5][4]
+
+
+                            var m = spanArray[1]
+                            var n = spanArray[3]
+                            m.innerText = "yo";
+                            n.innerText = "foo"
+
+                    }
                     view.notifyChange();
                 }
                 else if (options.palette==='OrRd'){
@@ -1639,6 +2219,31 @@
                     ShadMatRoof.uniforms.class5.value = class5;
                     ShadMatWalls.uniforms.paletteNo.value = 9;
                     ShadMatRoof.uniforms.paletteNo.value = 9;
+                    /////////// Interactive change of legend color ///////////:
+                    var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length ;
+
+                    for( var i = 0; i < number_spans ; i++ ){
+                       
+                            var target0 = spanArray[0] ; // first pan tag
+                            var target2 = spanArray[2] ;
+                            var target4 = spanArray[4] ;
+                            var target6 = spanArray[6] ;
+                            var target8 = spanArray[8] ;
+
+                            target0.style.background = colorbrewer.OrRd[5][0]
+                            target2.style.background = colorbrewer.OrRd[5][1]
+                            target4.style.background = colorbrewer.OrRd[5][2]
+                            target6.style.background = colorbrewer.OrRd[5][3]
+                            target8.style.background = colorbrewer.OrRd[5][4]
+
+
+                            var m = spanArray[1]
+                            var n = spanArray[3]
+                            m.innerText = "yo";
+                            n.innerText = "foo"
+
+                    }
                     view.notifyChange();
                 }
                 else if (options.palette==='YlOrRd'){
@@ -1661,6 +2266,31 @@
                     ShadMatRoof.uniforms.class5.value = class5;
                     ShadMatWalls.uniforms.paletteNo.value = 10;
                     ShadMatRoof.uniforms.paletteNo.value = 10;
+                    /////////// Interactive change of legend color ///////////:
+                    var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length ;
+
+                    for( var i = 0; i < number_spans ; i++ ){
+                       
+                            var target0 = spanArray[0] ; // first pan tag
+                            var target2 = spanArray[2] ;
+                            var target4 = spanArray[4] ;
+                            var target6 = spanArray[6] ;
+                            var target8 = spanArray[8] ;
+
+                            target0.style.background = colorbrewer.YlOrRd[5][0]
+                            target2.style.background = colorbrewer.YlOrRd[5][1]
+                            target4.style.background = colorbrewer.YlOrRd[5][2]
+                            target6.style.background = colorbrewer.YlOrRd[5][3]
+                            target8.style.background = colorbrewer.YlOrRd[5][4]
+
+
+                            var m = spanArray[1]
+                            var n = spanArray[3]
+                            m.innerText = "yo";
+                            n.innerText = "foo"
+
+                    }
                     view.notifyChange();
                 }
                 else if (options.palette==='YlOrBr'){
@@ -1683,11 +2313,354 @@
                     ShadMatRoof.uniforms.class5.value = class5;
                     ShadMatWalls.uniforms.paletteNo.value = 11;
                     ShadMatRoof.uniforms.paletteNo.value = 11;
+                    /////////// Interactive change of legend color ///////////:
+                    var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length ;
+
+                    for( var i = 0; i < number_spans ; i++ ){
+                       
+                            var target0 = spanArray[0] ; // first pan tag
+                            var target2 = spanArray[2] ;
+                            var target4 = spanArray[4] ;
+                            var target6 = spanArray[6] ;
+                            var target8 = spanArray[8] ;
+
+                            target0.style.background = colorbrewer.YlOrBr[5][0]
+                            target2.style.background = colorbrewer.YlOrBr[5][1]
+                            target4.style.background = colorbrewer.YlOrBr[5][2]
+                            target6.style.background = colorbrewer.YlOrBr[5][3]
+                            target8.style.background = colorbrewer.YlOrBr[5][4]
+
+
+                            var m = spanArray[1]
+                            var n = spanArray[3]
+                            m.innerText = "yo";
+                            n.innerText = "foo"
+
+                    }
                     view.notifyChange();
                 }
 
             });
-            /////////////////////////////////////////////////
+            /////////////// Measurements: Distance, Diameter, Area //////
+            var Measurements = menuGlobe.gui.addFolder('Measurements');
+            var Line = Measurements.addFolder('Distance');
+            var points = [];
+            var meshLineMaterial = new MeshLineMaterial({
+                //map: texture,
+                useMap: false,
+                color:  'red',
+                lineWidth: 3,
+                sizeAttenuation: 1
+            });
+            var Linelength = function() { 
+                this.SelectPoints = function ssss() { 
+                    var count = -1;
+                    window.onclick = function picking(event) {
+                        count++;
+                        var intersects = view.pickObjectsAt(event, 2, 'WFS Building');
+            
+                        if (intersects.length) {
+                        ////////////// getting the position of building by clicking on them
+                            var PointLine1 = new THREE.Vector3();//pickingBuildings(event);  // Here you can call pickingBuildings if you want!
+                            var PointLine2 = new THREE.Vector3();
+                            
+                                if(count==1){
+                                    geoposition = view.controls.pickGeoPosition(new itowns.THREE.Vector2(event.pageX,event.pageY));
+                                    let converted = geoposition.as('EPSG:4978'); 
+                                    PointLine1 = new THREE.Vector3(converted.x, converted.y, converted.z);
+                                    ShadMatWalls.uniforms.PointLine1.value = PointLine1;
+                                    console.log("PointLine1", PointLine1);
+                                }
+                                if(count==2){
+                                
+                                    geoposition = view.controls.pickGeoPosition(new itowns.THREE.Vector2(event.pageX,event.pageY));
+                                    let converted = geoposition.as('EPSG:4978'); 
+                                    PointLine2 = new THREE.Vector3(converted.x, converted.y, converted.z);
+                                    ShadMatWalls.uniforms.PointLine2.value = PointLine2;
+                                    console.log("PointLine2", PointLine2);
+                                    
+                                    
+                                   /* material = new THREE.LineBasicMaterial( { color: 0xff0000, linewidth: 6 } );
+                                    points.push( new THREE.Vector3( ShadMatWalls.uniforms.PointLine1.value.x, ShadMatWalls.uniforms.PointLine1.value.y, ShadMatWalls.uniforms.PointLine1.value.z ) );
+                                    points.push( new THREE.Vector3( ShadMatWalls.uniforms.PointLine2.value.x, ShadMatWalls.uniforms.PointLine2.value.y, ShadMatWalls.uniforms.PointLine2.value.z ) );
+
+                                    var geometry = new THREE.BufferGeometry().setFromPoints( points );
+                                   
+                                    var linee = new THREE.Line( geometry, material );
+                                   
+                                    view.scene.add( linee );
+                               */
+                                   ////// drawing line using meshline /////
+                                    var geometry = new THREE.Geometry();
+                                    geometry.vertices.push(new THREE.Vector3(ShadMatWalls.uniforms.PointLine1.value.x, ShadMatWalls.uniforms.PointLine1.value.y, ShadMatWalls.uniforms.PointLine1.value.z ))
+                                    geometry.vertices.push(new THREE.Vector3(ShadMatWalls.uniforms.PointLine2.value.x, ShadMatWalls.uniforms.PointLine2.value.y, ShadMatWalls.uniforms.PointLine2.value.z ))
+                                    var line = new MeshLine();
+                                    line.setGeometry( geometry);
+                                    var myMesh = new THREE.Mesh(line.geometry, meshLineMaterial);
+                                    view.scene.add( myMesh );  
+                                }
+                             
+                                /*var distance = Math.sqrt(Math.pow(ShadMatWalls.uniforms.PointLine1.value.x - ShadMatWalls.uniforms.PointLine2.value.x, 2) +
+                                Math.pow(ShadMatWalls.uniforms.PointLine1.value.y - ShadMatWalls.uniforms.PointLine2.value.y, 2)+
+                                Math.pow(ShadMatWalls.uniforms.PointLine1.value.z - ShadMatWalls.uniforms.PointLine2.value.z, 2));
+                                console.log("Distance: ", distance);*/
+                                
+
+                   
+                        }
+                    }
+                }
+            };
+            var textttt = new Linelength();
+            Line.add(textttt, 'SelectPoints');
+            var ComputeDistance = function() { 
+                this.computeDistance = function ssss() { 
+                    var distance = Math.sqrt(Math.pow(ShadMatWalls.uniforms.PointLine1.value.x - ShadMatWalls.uniforms.PointLine2.value.x, 2) +
+                                Math.pow(ShadMatWalls.uniforms.PointLine1.value.y - ShadMatWalls.uniforms.PointLine2.value.y, 2)+
+                                Math.pow(ShadMatWalls.uniforms.PointLine1.value.z - ShadMatWalls.uniforms.PointLine2.value.z, 2));
+                                //console.log("Distance: ", distance)
+                               // alert("Distance: "+ distance);
+                                var whitebg = document.getElementById("white-background");
+                                var dlg = document.getElementById("dlgbox");
+                                whitebg.style.display = "block";
+                                dlg.style.display = "block";
+                                var winWidth = window.innerWidth;
+                                var winHeight = window.innerHeight;
+                                dlg.style.left = (winWidth/2) - 480/2 + "px";
+                                dlg.style.stop = "150px";
+                                document.getElementById("dlg-body").innerHTML= distance + " m";
+                                document.getElementById("dlg-header").innerHTML = "Length"
+
+                }
+            }
+            var texttttt = new ComputeDistance();
+            Line.add(texttttt, 'computeDistance');
+           
+           
+            var lineStyle = Line.addFolder("lineStyle")
+            var lineWidthh = lineStyle.add({lineWidthh : 3}, 'lineWidthh').min(1).max(10).step(0.1).name('lineWidthh').onChange(
+                function originalityValuee(d){
+                
+                    meshLineMaterial.lineWidth = d;
+                    view.notifyChange(true);
+                }
+            );
+            var lineColor = lineStyle.addColor({lineColor : 0xff0000}, 'lineColor').onChange(
+                function updateColorEdges(value){
+                    meshLineMaterial.color = new THREE.Color(value);
+                    view.notifyChange(true);
+                }
+            ); 
+            ///////////////// Measurement: Diameter
+            var Diam = Measurements.addFolder('Perimeter');
+            var PolygonPoints = [];
+            var meshLineMaterialPolygon = new MeshLineMaterial({
+                //map: texture,
+                useMap: false,
+                color:  'red',
+                lineWidth: 3,
+                sizeAttenuation: 1
+            });
+            var polygonPerimeter = function() { 
+                this.SelectPolygonPoints = function ssss() { 
+                    var count = -1;
+                    window.onclick = function picking(event) {
+                        count++;
+                        var intersects = view.pickObjectsAt(event, 2, 'WFS Building');
+            
+                        if (intersects.length) {
+                        ////////////// getting the position of building by clicking on them
+                            var PointDiameter1 = new THREE.Vector3();//pickingBuildings(event);  // Here you can call pickingBuildings if you want!
+                            var PointDiameter2 = new THREE.Vector3();
+                            var PointDiameter3 = new THREE.Vector3();
+                            var PointDiameter4 = new THREE.Vector3();
+                            
+                                if(count==1){
+                                    geoposition = view.controls.pickGeoPosition(new itowns.THREE.Vector2(event.pageX,event.pageY));
+                                    let converted = geoposition.as('EPSG:4978'); 
+                                    PointDiameter1 = new THREE.Vector3(converted.x, converted.y, converted.z);
+                                    ShadMatWalls.uniforms.PointDiameter1.value = PointDiameter1;
+                                    console.log("PointDiameter1", PointDiameter1);
+                                }
+                                if(count==2){
+                                
+                                    geoposition = view.controls.pickGeoPosition(new itowns.THREE.Vector2(event.pageX,event.pageY));
+                                    let converted = geoposition.as('EPSG:4978'); 
+                                    PointDiameter2 = new THREE.Vector3(converted.x, converted.y, converted.z);
+                                    ShadMatWalls.uniforms.PointDiameter2.value = PointDiameter2;
+                                    console.log("PointDiameter2", PointDiameter2);
+                                    
+                                    
+                                }
+                             
+                                if(count==3){
+                                    geoposition = view.controls.pickGeoPosition(new itowns.THREE.Vector2(event.pageX,event.pageY));
+                                    let converted = geoposition.as('EPSG:4978'); 
+                                    PointDiameter3 = new THREE.Vector3(converted.x, converted.y, converted.z);
+                                    ShadMatWalls.uniforms.PointDiameter3.value = PointDiameter3;
+                                    console.log("PointDiameter3", PointDiameter3);
+                                }
+                                if(count==4){
+                                    geoposition = view.controls.pickGeoPosition(new itowns.THREE.Vector2(event.pageX,event.pageY));
+                                    let converted = geoposition.as('EPSG:4978'); 
+                                    PointDiameter4 = new THREE.Vector3(converted.x, converted.y, converted.z);
+                                    ShadMatWalls.uniforms.PointDiameter4.value = PointDiameter4;
+                                    console.log("PointDiameter4", PointDiameter4);
+                                   /* var geometry = new THREE.Geometry();
+                                    geometry.vertices.push(new THREE.Vector3(ShadMatWalls.uniforms.PointPolygon1.value.x, ShadMatWalls.uniforms.PointPolygon1.value.y, ShadMatWalls.uniforms.PointPolygon1.value.z ))
+                                    geometry.vertices.push(new THREE.Vector3(ShadMatWalls.uniforms.PointPolygon2.value.x, ShadMatWalls.uniforms.PointPolygon2.value.y, ShadMatWalls.uniforms.PointPolygon2.value.z ))
+                                    geometry.vertices.push(new THREE.Vector3(ShadMatWalls.uniforms.PointPolygon3.value.x, ShadMatWalls.uniforms.PointPolygon3.value.y, ShadMatWalls.uniforms.PointPolygon3.value.z ))
+                                    geometry.vertices.push(new THREE.Vector3(ShadMatWalls.uniforms.PointPolygon4.value.x, ShadMatWalls.uniforms.PointPolygon4.value.y, ShadMatWalls.uniforms.PointPolygon4.value.z ))
+                                    var polygon = new MeshLine();
+                                    polygon.setGeometry( geometry);
+                                    var polygonMesh = new THREE.Mesh(polygon.geometry, meshLineMaterialPolygon);
+                                    view.scene.add( polygonMesh );*/
+                                }
+                                
+
+                   
+                        }
+                    }
+                }
+            };
+            var textttttt = new polygonPerimeter();
+            Diam.add(textttttt, 'SelectPolygonPoints');
+            var ComputePerimeter = function() { 
+                this.Perimeter = function ssss() { 
+                    var perimeter = Math.sqrt(
+                                Math.pow(ShadMatWalls.uniforms.PointDiameter1.value.x - ShadMatWalls.uniforms.PointDiameter2.value.x, 2) +
+                                Math.pow(ShadMatWalls.uniforms.PointDiameter1.value.y - ShadMatWalls.uniforms.PointDiameter2.value.y, 2)+
+                                Math.pow(ShadMatWalls.uniforms.PointDiameter1.value.z - ShadMatWalls.uniforms.PointDiameter2.value.z, 2))
+                                +Math.sqrt(Math.pow(ShadMatWalls.uniforms.PointDiameter2.value.x - ShadMatWalls.uniforms.PointDiameter3.value.x, 2) +
+                                Math.pow(ShadMatWalls.uniforms.PointDiameter2.value.y - ShadMatWalls.uniforms.PointDiameter3.value.y, 2)+
+                                Math.pow(ShadMatWalls.uniforms.PointDiameter2.value.z - ShadMatWalls.uniforms.PointDiameter3.value.z, 2))
+                                +Math.sqrt(Math.pow(ShadMatWalls.uniforms.PointDiameter3.value.x - ShadMatWalls.uniforms.PointDiameter4.value.x, 2) +
+                                Math.pow(ShadMatWalls.uniforms.PointDiameter3.value.y - ShadMatWalls.uniforms.PointDiameter4.value.y, 2)+
+                                Math.pow(ShadMatWalls.uniforms.PointDiameter3.value.z - ShadMatWalls.uniforms.PointDiameter4.value.z, 2))
+                                +Math.sqrt(Math.pow(ShadMatWalls.uniforms.PointDiameter4.value.x - ShadMatWalls.uniforms.PointDiameter1.value.x, 2) +
+                                Math.pow(ShadMatWalls.uniforms.PointDiameter4.value.y - ShadMatWalls.uniforms.PointDiameter1.value.y, 2)+
+                                Math.pow(ShadMatWalls.uniforms.PointDiameter4.value.z - ShadMatWalls.uniforms.PointDiameter1.value.z, 2));
+                                console.log("diameter: ", perimeter)
+                               // alert("Distance: "+ distance);
+                                var whitebg = document.getElementById("white-background");
+                                var dlg = document.getElementById("dlgbox");
+                                whitebg.style.display = "block";
+                                dlg.style.display = "block";
+                                var winWidth = window.innerWidth;
+                                var winHeight = window.innerHeight;
+                                dlg.style.left = (winWidth/2) - 480/2 + "px";
+                                dlg.style.stop = "150px";
+                                document.getElementById("dlg-body").innerHTML= perimeter + " m";
+                                document.getElementById("dlg-header").innerHTML = "Perimeter"
+                                
+
+                }
+            }
+            var texttttttt = new ComputePerimeter();
+            Diam.add(texttttttt, 'Perimeter');
+
+            ///////////////: Measurement: area
+            var Area = Measurements.addFolder('Area');
+            var polygonArea = function() { 
+                this.SelectPolygonPoints = function ssss() { 
+                    var count = -1;
+                    window.onclick = function picking(event) {
+                        count++;
+                        var intersects = view.pickObjectsAt(event, 2, 'WFS Building');
+            
+                        if (intersects.length) {
+                        ////////////// getting the position of building by clicking on them
+                            var PointArea1 = new THREE.Vector3();//pickingBuildings(event);  // Here you can call pickingBuildings if you want!
+                            var PointArea2 = new THREE.Vector3();
+                            var PointArea3 = new THREE.Vector3();
+                            var PointArea4 = new THREE.Vector3();
+                            
+                                if(count==1){
+                                    geoposition = view.controls.pickGeoPosition(new itowns.THREE.Vector2(event.pageX,event.pageY));
+                                    let converted = geoposition.as('EPSG:4978'); 
+                                    PointArea1 = new THREE.Vector3(converted.x, converted.y, converted.z);
+                                    ShadMatWalls.uniforms.PointArea1.value = PointArea1;
+                                    console.log("PointArea1", PointArea1);
+                                }
+                                if(count==2){
+                                
+                                    geoposition = view.controls.pickGeoPosition(new itowns.THREE.Vector2(event.pageX,event.pageY));
+                                    let converted = geoposition.as('EPSG:4978'); 
+                                    PointArea2 = new THREE.Vector3(converted.x, converted.y, converted.z);
+                                    ShadMatWalls.uniforms.PointArea2.value = PointArea2;
+                                    console.log("PointArea2", PointArea2);
+                                    
+                                    
+                                }
+                             
+                                if(count==3){
+                                    geoposition = view.controls.pickGeoPosition(new itowns.THREE.Vector2(event.pageX,event.pageY));
+                                    let converted = geoposition.as('EPSG:4978'); 
+                                    PointArea3 = new THREE.Vector3(converted.x, converted.y, converted.z);
+                                    ShadMatWalls.uniforms.PointArea3.value = PointArea3;
+                                    console.log("PointArea3", PointArea3);
+                                }
+                                if(count==4){
+                                    geoposition = view.controls.pickGeoPosition(new itowns.THREE.Vector2(event.pageX,event.pageY));
+                                    let converted = geoposition.as('EPSG:4978'); 
+                                    PointArea4 = new THREE.Vector3(converted.x, converted.y, converted.z);
+                                    ShadMatWalls.uniforms.PointArea4.value = PointArea4;
+                                    console.log("PointArea4", PointArea4);
+                                   /* var geometry = new THREE.Geometry();
+                                    geometry.vertices.push(new THREE.Vector3(ShadMatWalls.uniforms.PointPolygon1.value.x, ShadMatWalls.uniforms.PointPolygon1.value.y, ShadMatWalls.uniforms.PointPolygon1.value.z ))
+                                    geometry.vertices.push(new THREE.Vector3(ShadMatWalls.uniforms.PointPolygon2.value.x, ShadMatWalls.uniforms.PointPolygon2.value.y, ShadMatWalls.uniforms.PointPolygon2.value.z ))
+                                    geometry.vertices.push(new THREE.Vector3(ShadMatWalls.uniforms.PointPolygon3.value.x, ShadMatWalls.uniforms.PointPolygon3.value.y, ShadMatWalls.uniforms.PointPolygon3.value.z ))
+                                    geometry.vertices.push(new THREE.Vector3(ShadMatWalls.uniforms.PointPolygon4.value.x, ShadMatWalls.uniforms.PointPolygon4.value.y, ShadMatWalls.uniforms.PointPolygon4.value.z ))
+                                    var polygon = new MeshLine();
+                                    polygon.setGeometry( geometry);
+                                    var polygonMesh = new THREE.Mesh(polygon.geometry, meshLineMaterialPolygon);
+                                    view.scene.add( polygonMesh );*/
+                                }
+                                
+
+                   
+                        }
+                    }
+                }
+            };
+            var textttttttt = new polygonArea();
+            Area.add(textttttttt, 'SelectPolygonPoints');
+            var ComputeArea = function() { 
+                this.ComputeArea = function ssss() { 
+                    var area = 0.5 * Math.abs(((ShadMatWalls.uniforms.PointArea1.value.x)*(ShadMatWalls.uniforms.PointArea2.value.y)) - ((ShadMatWalls.uniforms.PointArea2.value.x)*(ShadMatWalls.uniforms.PointArea1.value.y))+
+                                ((ShadMatWalls.uniforms.PointArea2.value.x)*(ShadMatWalls.uniforms.PointArea3.value.y)) - ((ShadMatWalls.uniforms.PointArea3.value.x)*(ShadMatWalls.uniforms.PointArea2.value.y))+
+                                ((ShadMatWalls.uniforms.PointArea3.value.x)*(ShadMatWalls.uniforms.PointArea4.value.y)) - ((ShadMatWalls.uniforms.PointArea4.value.x)*(ShadMatWalls.uniforms.PointArea3.value.y))+
+                                ((ShadMatWalls.uniforms.PointArea4.value.x)*(ShadMatWalls.uniforms.PointArea1.value.y)) - ((ShadMatWalls.uniforms.PointArea1.value.x)*(ShadMatWalls.uniforms.PointArea4.value.y)));
+                                console.log("area: ", area)
+                               // alert("Distance: "+ distance);
+                                var whitebg = document.getElementById("white-background");
+                                var dlg = document.getElementById("dlgbox");
+                                whitebg.style.display = "block";
+                                dlg.style.display = "block";
+                                var winWidth = window.innerWidth;
+                                var winHeight = window.innerHeight;
+                                dlg.style.left = (winWidth/2) - 480/2 + "px";
+                                dlg.style.stop = "150px";
+                                document.getElementById("dlg-body").innerHTML= area + " m^2";
+                                document.getElementById("dlg-header").innerHTML = "Area"
+                                
+
+                }
+            }
+            var texttttttttt = new ComputeArea();
+            Area.add(texttttttttt, 'ComputeArea');
+
+
+
+            function Exit(){
+                var whitebg = document.getElementById("white-background");
+                var dlg = document.getElementById("dlgbox");
+                whitebg.style.display = "none";
+                dlg.style.display = "none";
+            }
+           
+            
         </script>
 
     </body>
