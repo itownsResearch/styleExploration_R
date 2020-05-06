@@ -427,7 +427,7 @@
                 float numberOfClasses = 5.;
                 float interval;
                 interval = (queryZbottomMax - queryZbottomMin)/5.;
-                float fuzzDom = 4.; /// uncertainty domain
+                float fuzzDom = 3.; /// uncertainty domain
                 ///////// Stylization of Building in Polygon ROI using Coloe Palettes /////////////////
                 if(bufferCondition == 1. || distCentralPosBuffer<bufferDistance) { //buffer condition: the condition set for objects inside and outside of polygon buffer: 1: true, 0: false
                     ///// focus objects in polygon ROI ///////
@@ -2847,18 +2847,32 @@
                 //return "#" + r + g + b;
                 return new THREE.Color("#" + r + g + b)
             }   
+        function RGBToHex(r,g,b) {
+            r = r.toString(16);
+            g = g.toString(16);
+            b = b.toString(16);
+
+            if (r.length == 1)
+                r = "0" + r;
+            if (g.length == 1)
+                g = "0" + g;
+            if (b.length == 1)
+                b = "0" + b;
+
+            return new THREE.Color("#" + r + g + b)
+        }    
             //////////////////////////////// Generating color palette using gradually changing lightness value /////////
-            var RGBinitial = new THREE.Color();
-            var convertedRGB2HSL = new THREE.Vector3();
-            var lightness1;
-            var lightness2;
-            var lightness3;
-            var lightness4;
-            var lightness5;
-            //console.log("test",convertedRGB2HSL.x)
-            var lightnessStep = colorPalettes.addFolder("lightness steps")
-            var colorSelection = lightnessStep.addColor({Color : ShadMatWalls.uniforms.color.value.getHex()}, 'Color').onChange(
-            ///retrieving first color for interpolation
+        var RGBinitial = new THREE.Color();
+        var convertedRGB2HSL = new THREE.Vector3();
+        var lightness1;
+        var lightness2;
+        var lightness3;
+        var lightness4;
+        var lightness5;
+        //console.log("test",convertedRGB2HSL.x)
+        var lightnessStep = colorPalettes.addFolder("lightness steps")
+        var colorSelection = lightnessStep.addColor({Color : ShadMatWalls.uniforms.color.value.getHex()}, 'Color').onChange(
+        ///retrieving first color for interpolation
     
                 function updateColorEdges(value){
                     ShadMatWalls.uniforms.color1c1.value = class1;
@@ -2886,10 +2900,15 @@
         
                     /////////////// convert hsl to hex and set to class of color palettes //////:
                     class1 = HSL2Hex(convertedRGB2HSL.x, convertedRGB2HSL.y, lightness1);
+                    console.log("class1 lightness", class1)
                     class2 = HSL2Hex(convertedRGB2HSL.x, convertedRGB2HSL.y, lightness2);
+                    console.log("class2 lightness", class2)
                     class3 = HSL2Hex(convertedRGB2HSL.x, convertedRGB2HSL.y, lightness3);
+                    console.log("class3 lightness", class3)
                     class4 = HSL2Hex(convertedRGB2HSL.x, convertedRGB2HSL.y, lightness4);
+                    console.log("class4 lightness", class4)
                     class5 = HSL2Hex(convertedRGB2HSL.x, convertedRGB2HSL.y, lightness5);
+                    console.log("class5 lightness", class5)
                     //// interpolating between colors as user change color
                     var vv= 0;
                     view.addFrameRequester(itowns.MAIN_LOOP_EVENTS.BEFORE_RENDER, () => { 
@@ -2950,6 +2969,430 @@
                 }
   
             );
+        /////////////////////////// Linear interpiolation: https://gist.github.com/maxwells/8251275 /////////////
+
+        Color = function(hexOrObject) {
+            var obj;
+            if (hexOrObject instanceof Object) {
+                obj = hexOrObject;
+            } else {
+                obj = LinearColorInterpolator.convertHexToRgb(hexOrObject);
+            }
+            this.r = obj.r;
+            this.g = obj.g;
+            this.b = obj.b;
+        }
+        Color.prototype.asRgbCss = function() {
+            return "rgb("+this.r+", "+this.g+", "+this.b+")";
+        }
+
+        var LinearColorInterpolator = { 
+            // convert 6-digit hex to rgb components;
+            // accepts with or without hash ("335577" or "#335577")
+            convertHexToRgb: function(hex) {
+                match = hex.replace(/#/,'').match(/.{1,2}/g);
+                return new Color({
+                    r: parseInt(match[0], 16),
+                    g: parseInt(match[1], 16),
+                    b: parseInt(match[2], 16)
+                });
+            },
+            // left and right are colors that you're aiming to find
+            // a color between. Percentage (0-100) indicates the ratio
+            // of right to left. Higher percentage means more right,
+            // lower means more left.
+            findColorBetween: function(left, right, percentage) {
+                newColor = {};
+                components = ["r", "g", "b"];
+                for (var i = 0; i < components.length; i++) {
+                    c = components[i];
+                    newColor[c] = Math.round(left[c] + (right[c] - left[c]) * percentage / 100);
+                }
+                return new Color(newColor);
+            }
+        }
+   
+       /* var l = new Color({ r:255, g:0, b:0 });
+        var r = new Color("#ffffff");
+        var backgroundColor = LinearColorInterpolator.findColorBetween(l, r, 95).asRgbCss(); 
+        console.log("backgroundColor", backgroundColor)   */
+        var LinearInterpolation = colorPalettes.addFolder("Linear Interpolation")
+        var singleHue = LinearInterpolation.addColor({Color : ShadMatWalls.uniforms.color.value.getHex()}, 'Color').onChange(
+        ///retrieving first color for interpolation
+    
+                function updateColorEdges(value){
+                    ShadMatWalls.uniforms.color1c1.value = class1;
+                    ShadMatWalls.uniforms.color1c2.value = class2;
+                    ShadMatWalls.uniforms.color1c3.value = class3;
+                    ShadMatWalls.uniforms.color1c4.value = class4;
+                    ShadMatWalls.uniforms.color1c5.value = class5;
+                    ShadMatRoof.uniforms.color1c1.value = class1;
+                    ShadMatRoof.uniforms.color1c2.value = class2;
+                    ShadMatRoof.uniforms.color1c3.value = class3;
+                    ShadMatRoof.uniforms.color1c4.value = class4;
+                    ShadMatRoof.uniforms.color1c5.value = class5;
+                   
+                    var domain = (97)/4;
+                    
+                    /////////// l: getting color selected by user in GUI
+                    /////////// r: the end of palette which is white
+                    var l = new Color({ r:singleHue.__color.r, g:singleHue.__color.g, b:singleHue.__color.b });
+                    var r = new Color("#ffffff");
+                    /////////////// convert hsl to hex and set to class of color palettes //////:
+                    classOne = LinearColorInterpolator.findColorBetween(l, r, 4*domain);
+                    class1 = RGBToHex(classOne.r, classOne.g, classOne.b)
+                    console.log("class1-linear",class1)
+                    classTwo = LinearColorInterpolator.findColorBetween(l, r, 3*domain);
+                    class2 = RGBToHex(classTwo.r, classTwo.g, classTwo.b)
+                    console.log("class2-linear",class2)
+                    classThree = LinearColorInterpolator.findColorBetween(l, r, 2*domain);
+                    class3 = RGBToHex(classThree.r, classThree.g, classThree.b)
+                    console.log("class3-linear",class3)
+                    classFour = LinearColorInterpolator.findColorBetween(l, r, domain);
+                    class4 = RGBToHex(classFour.r, classFour.g, classFour.b)
+                    console.log("class4-linear",class4)
+                    classFive = LinearColorInterpolator.findColorBetween(l, r, 0);
+                    class5 = RGBToHex(classFive.r, classFive.g, classFive.b)
+                    console.log("class5-linear",class5)
+                    //// interpolating between colors as user change color
+                    var vv= 0;
+                    view.addFrameRequester(itowns.MAIN_LOOP_EVENTS.BEFORE_RENDER, () => { 
+                            vv = vv + 0.03;
+                            if(vv<1.5708){
+                            ShadMatWalls.uniforms.u_time.value = vv ;
+                            ShadMatRoof.uniforms.u_time.value = vv ;
+                            }
+
+                        view.notifyChange(true);
+                    });
+
+                    ShadMatWalls.uniforms.class1.value= class1;
+                    ShadMatWalls.uniforms.class2.value=class2;
+                    ShadMatWalls.uniforms.class3.value=class3;
+                    ShadMatWalls.uniforms.class4.value=class4;
+                    ShadMatWalls.uniforms.class5.value=class5;
+                    /*ShadMatRoof.uniforms.class1.value=class1;
+                    ShadMatRoof.uniforms.class2.value=class2;
+                    ShadMatRoof.uniforms.class3.value=class3;
+                    ShadMatRoof.uniforms.class4.value=class4;
+                    ShadMatRoof.uniforms.class5.value=class5;*/
+                    
+                    var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length;
+
+                    for (var i = 0; i < number_spans; i++) {
+
+                        var target0 = spanArray[0]; // first pan tag
+                        var target2 = spanArray[2];
+                        var target4 = spanArray[4];
+                        var target6 = spanArray[6];
+                        var target8 = spanArray[8];
+                        var Legend1= '#'+ class1.getHexString()
+                        var Legend2= '#'+ class2.getHexString()
+                        var Legend3= '#'+ class3.getHexString()
+                        var Legend4= '#'+ class4.getHexString()
+                        var Legend5= '#'+ class5.getHexString()
+
+                        target0.style.background = Legend1;
+                        target2.style.background = Legend2;
+                        target4.style.background = Legend3;
+                        target6.style.background = Legend4;
+                        target8.style.background = Legend5;
+
+                        var m = spanArray[1]
+                        var n = spanArray[3]
+                        m.innerText = "yo";
+                        n.innerText = "foo"
+                    }   
+                    view.notifyChange(true);   
+        
+                }
+  
+            );
+
+        ////////////// update color paletee //////////
+        var updatePalette = Style_criteria.addFolder("Palette Change")
+        var paletteClass1 = updatePalette.addColor({class1 : ShadMatWalls.uniforms.color.value.getHex()}, 'class1').onChange(
+    
+                function updateColorEdges(value){
+                    ShadMatWalls.uniforms.color1c1.value = class1;
+                    ShadMatWalls.uniforms.color1c2.value = class2;
+                    ShadMatWalls.uniforms.color1c3.value = class3;
+                    ShadMatWalls.uniforms.color1c4.value = class4;
+                    ShadMatWalls.uniforms.color1c5.value = class5;
+                    
+                    
+                    var r = new Color("#ffffff");
+                   
+                    var l = new THREE.Color(paletteClass1.__color.r,paletteClass1.__color.g,paletteClass1.__color.b );
+                    /////////////// convert hsl to hex and set to class of color palettes //////:
+                    classOne = LinearColorInterpolator.findColorBetween(l, r, 0);
+                    class1 = RGBToHex(classOne.r, classOne.g, classOne.b)
+                    console.log("class1",class1)
+                    
+                    //// interpolating between colors as user change color
+                    var vv= 0;
+                    view.addFrameRequester(itowns.MAIN_LOOP_EVENTS.BEFORE_RENDER, () => { 
+                            vv = vv + 0.03;
+                            if(vv<1.5708){
+                            ShadMatWalls.uniforms.u_time.value = vv ;
+                            ShadMatRoof.uniforms.u_time.value = vv ;
+                            }
+
+                        view.notifyChange(true);
+                    });
+
+                    ShadMatWalls.uniforms.class1.value = class1;
+                    
+                    
+                    var spanArray = document.getElementsByTagName('span');
+                    var number_spans = spanArray.length;
+
+                    for (var i = 0; i < number_spans; i++) {
+
+                        var target0 = spanArray[0]; // first pan tag
+                        
+                        var Legend1= '#'+ class1.getHexString()
+                       
+
+                        target0.style.background = Legend1;
+                        
+
+                        var m = spanArray[1]
+                        var n = spanArray[3]
+                        m.innerText = "yo";
+                        n.innerText = "foo"
+                    }   
+                    view.notifyChange(true);   
+        
+                }
+  
+            );
+        var paletteClass2 = updatePalette.addColor({class2 : ShadMatWalls.uniforms.color.value.getHex()}, 'class2').onChange(
+    
+            function updateColorEdges(value){
+                ShadMatWalls.uniforms.color1c1.value = class1;
+                ShadMatWalls.uniforms.color1c2.value = class2;
+                ShadMatWalls.uniforms.color1c3.value = class3;
+                ShadMatWalls.uniforms.color1c4.value = class4;
+                ShadMatWalls.uniforms.color1c5.value = class5;
+                
+                
+                var r = new Color("#ffffff");
+            
+                var l = new THREE.Color(paletteClass2.__color.r,paletteClass2.__color.g,paletteClass2.__color.b );
+                /////////////// convert hsl to hex and set to class of color palettes //////:
+                classTwo = LinearColorInterpolator.findColorBetween(l, r, 0);
+                class2 = RGBToHex(classTwo.r, classTwo.g, classTwo.b)
+                console.log("class1",class1)
+                
+                //// interpolating between colors as user change color
+                var vv= 0;
+                view.addFrameRequester(itowns.MAIN_LOOP_EVENTS.BEFORE_RENDER, () => { 
+                        vv = vv + 0.03;
+                        if(vv<1.5708){
+                        ShadMatWalls.uniforms.u_time.value = vv ;
+                        ShadMatRoof.uniforms.u_time.value = vv ;
+                        }
+
+                    view.notifyChange(true);
+                });
+
+                ShadMatWalls.uniforms.class2.value = class2;
+                
+                
+                var spanArray = document.getElementsByTagName('span');
+                var number_spans = spanArray.length;
+
+                for (var i = 0; i < number_spans; i++) {
+
+                    var target1 = spanArray[2]; // first pan tag
+                    
+                    var Legend2= '#'+ class2.getHexString()
+                
+
+                    target1.style.background = Legend2;
+                    
+
+                    var m = spanArray[1]
+                    var n = spanArray[3]
+                    m.innerText = "yo";
+                    n.innerText = "foo"
+                }   
+                view.notifyChange(true);   
+
+            }
+
+        );
+        var paletteClass3 = updatePalette.addColor({class3 : ShadMatWalls.uniforms.color.value.getHex()}, 'class3').onChange(
+    
+            function updateColorEdges(value){
+                ShadMatWalls.uniforms.color1c1.value = class1;
+                ShadMatWalls.uniforms.color1c2.value = class2;
+                ShadMatWalls.uniforms.color1c3.value = class3;
+                ShadMatWalls.uniforms.color1c4.value = class4;
+                ShadMatWalls.uniforms.color1c5.value = class5;
+                
+                
+                var r = new Color("#ffffff");
+            
+                var l = new THREE.Color(paletteClass3.__color.r,paletteClass3.__color.g,paletteClass3.__color.b );
+                /////////////// convert hsl to hex and set to class of color palettes //////:
+                classThree = LinearColorInterpolator.findColorBetween(l, r, 0);
+                class3 = RGBToHex(classThree.r, classThree.g, classThree.b)
+                console.log("class1",class3)
+                
+                //// interpolating between colors as user change color
+                var vv= 0;
+                view.addFrameRequester(itowns.MAIN_LOOP_EVENTS.BEFORE_RENDER, () => { 
+                        vv = vv + 0.03;
+                        if(vv<1.5708){
+                        ShadMatWalls.uniforms.u_time.value = vv ;
+                        ShadMatRoof.uniforms.u_time.value = vv ;
+                        }
+
+                    view.notifyChange(true);
+                });
+
+                ShadMatWalls.uniforms.class3.value = class3;
+                
+                
+                var spanArray = document.getElementsByTagName('span');
+                var number_spans = spanArray.length;
+
+                for (var i = 0; i < number_spans; i++) {
+
+                    var target2 = spanArray[4]; // first pan tag
+                    
+                    var Legend3= '#'+ class3.getHexString()
+                
+
+                    target2.style.background = Legend3;
+                    
+
+                    var m = spanArray[1]
+                    var n = spanArray[3]
+                    m.innerText = "yo";
+                    n.innerText = "foo"
+                }   
+                view.notifyChange(true);   
+
+            }
+
+        );
+        var paletteClass4 = updatePalette.addColor({class4 : ShadMatWalls.uniforms.color.value.getHex()}, 'class4').onChange(
+    
+            function updateColorEdges(value){
+                ShadMatWalls.uniforms.color1c1.value = class1;
+                ShadMatWalls.uniforms.color1c2.value = class2;
+                ShadMatWalls.uniforms.color1c3.value = class3;
+                ShadMatWalls.uniforms.color1c4.value = class4;
+                ShadMatWalls.uniforms.color1c5.value = class5;
+                
+                
+                var r = new Color("#ffffff");
+            
+                var l = new THREE.Color(paletteClass4.__color.r,paletteClass4.__color.g,paletteClass4.__color.b );
+                /////////////// convert hsl to hex and set to class of color palettes //////:
+                classFour = LinearColorInterpolator.findColorBetween(l, r, 0);
+                class4 = RGBToHex(classFour.r, classFour.g, classFour.b)
+                console.log("class1",class4)
+                
+                //// interpolating between colors as user change color
+                var vv= 0;
+                view.addFrameRequester(itowns.MAIN_LOOP_EVENTS.BEFORE_RENDER, () => { 
+                        vv = vv + 0.03;
+                        if(vv<1.5708){
+                        ShadMatWalls.uniforms.u_time.value = vv ;
+                        ShadMatRoof.uniforms.u_time.value = vv ;
+                        }
+
+                    view.notifyChange(true);
+                });
+
+                ShadMatWalls.uniforms.class4.value = class4;
+                
+                
+                var spanArray = document.getElementsByTagName('span');
+                var number_spans = spanArray.length;
+
+                for (var i = 0; i < number_spans; i++) {
+
+                    var target3 = spanArray[6]; // first pan tag
+                    
+                    var Legend4= '#'+ class4.getHexString()
+                
+
+                    target3.style.background = Legend4;
+                    
+
+                    var m = spanArray[1]
+                    var n = spanArray[3]
+                    m.innerText = "yo";
+                    n.innerText = "foo"
+                }   
+                view.notifyChange(true);   
+
+            }
+
+        );
+        var paletteClass5 = updatePalette.addColor({class5 : ShadMatWalls.uniforms.color.value.getHex()}, 'class5').onChange(
+    
+            function updateColorEdges(value){
+                ShadMatWalls.uniforms.color1c1.value = class1;
+                ShadMatWalls.uniforms.color1c2.value = class2;
+                ShadMatWalls.uniforms.color1c3.value = class3;
+                ShadMatWalls.uniforms.color1c4.value = class4;
+                ShadMatWalls.uniforms.color1c5.value = class5;
+                
+                
+                var r = new Color("#ffffff");
+            
+                var l = new THREE.Color(paletteClass5.__color.r,paletteClass5.__color.g,paletteClass5.__color.b );
+                /////////////// convert hsl to hex and set to class of color palettes //////:
+                classFive = LinearColorInterpolator.findColorBetween(l, r, 0);
+                class5 = RGBToHex(classFive.r, classFive.g, classFive.b)
+                
+                //// interpolating between colors as user change color
+                var vv= 0;
+                view.addFrameRequester(itowns.MAIN_LOOP_EVENTS.BEFORE_RENDER, () => { 
+                        vv = vv + 0.03;
+                        if(vv<1.5708){
+                        ShadMatWalls.uniforms.u_time.value = vv ;
+                        ShadMatRoof.uniforms.u_time.value = vv ;
+                        }
+
+                    view.notifyChange(true);
+                });
+
+                ShadMatWalls.uniforms.class5.value = class5;
+                
+                
+                var spanArray = document.getElementsByTagName('span');
+                var number_spans = spanArray.length;
+
+                for (var i = 0; i < number_spans; i++) {
+
+                    var target4 = spanArray[8]; // first pan tag
+                    
+                    var Legend5= '#'+ class5.getHexString()
+                
+
+                    target4.style.background = Legend5;
+                    
+
+                    var m = spanArray[1]
+                    var n = spanArray[3]
+                    m.innerText = "yo";
+                    n.innerText = "foo"
+                }   
+                view.notifyChange(true);   
+
+            }
+
+        );
+
+        //////////////////////////////////////////////////////////
         /////////////// Measurements: Distance, Diameter, Area //////
         var Measurements = menuGlobe.gui.addFolder('Measurements');
         var Line = Measurements.addFolder('Distance');
@@ -3464,14 +3907,30 @@
             lightnessFunction.style.backgroundColor = "#de2d26";
             lightnessFunction.style.color = "#000000"
 
-            var measurementFolder = document.getElementsByClassName('title')[13];
+            var linearInterpolationFolder = document.getElementsByClassName('title')[13]
+            linearInterpolationFolder.style.color = "#31a354"
+            linearInterpolationFolder.style.backgroundPosition = '90% center';
+            linearInterpolationFolder.style.backgroundSize = "20px 20px";
+            linearInterpolationFolder.style.backgroundImage = "url('icons/linearInterpolation.png')";
+
+            var linearFunction = document.getElementsByClassName('cr color')[1];
+            linearFunction.style.backgroundColor = "#31a354";
+            linearFunction.style.color = "#000000"
+
+            var paletteChangeFolder = document.getElementsByClassName('title')[14]
+            paletteChangeFolder.style.color = "#ffee03"
+            paletteChangeFolder.style.backgroundPosition = '90% center';
+            paletteChangeFolder.style.backgroundSize = "20px 20px";
+            paletteChangeFolder.style.backgroundImage = "url('icons/edit.png')";
+
+            var measurementFolder = document.getElementsByClassName('title')[15];
             measurementFolder.style.backgroundPosition = '90% center';
             measurementFolder.style.backgroundSize = "20px 20px";
             measurementFolder.style.backgroundImage = "url('icons/measurement.png')";
             measurementFolder.style.color = "#ffee03"
             measurementFolder.style.fontWeight = "bold";
 
-            var distanceFolder = document.getElementsByClassName('title')[14];
+            var distanceFolder = document.getElementsByClassName('title')[16];
             distanceFolder.style.backgroundPosition = '90% center';
             distanceFolder.style.backgroundSize = "20px 20px";
             distanceFolder.style.backgroundImage = "url('icons/distance.png')";
@@ -3489,7 +3948,7 @@
             distanceCompute.style.backgroundColor = "#fc9272";
             distanceCompute.style.color = "#000000"
 
-            var perimeterFolder = document.getElementsByClassName('title')[16];
+            var perimeterFolder = document.getElementsByClassName('title')[18];
             perimeterFolder.style.backgroundPosition = '90% center';
             perimeterFolder.style.backgroundSize = "20px 20px";
             perimeterFolder.style.backgroundImage = "url('icons/perimeter.png')";
@@ -3503,7 +3962,7 @@
             perimeterCompute.style.backgroundColor = "#a1d99b";
             perimeterCompute.style.color = "#000000"
 
-            var areaFolder = document.getElementsByClassName('title')[17];
+            var areaFolder = document.getElementsByClassName('title')[19];
             areaFolder.style.backgroundPosition = '90% center';
             areaFolder.style.backgroundSize = "20px 20px";
             areaFolder.style.backgroundImage = "url('icons/area.png')";
