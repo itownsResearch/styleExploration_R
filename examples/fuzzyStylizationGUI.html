@@ -198,14 +198,13 @@
         itowns.Fetcher.json('./layers/JSONLayers/Ortho.json').then(createWMTSSourceFromConfig).then(addColorLayerFromConfig);
         var cartographicTasks = menuGlobe.gui.addFolder('Cartographic Tasks');
         var baseMap = menuGlobe.gui.addFolder('BaseMap');
-        /// change opacity between two basemaps
+        ////// Interactive opacity change between two baseMaps ///////
         var change = baseMap.add({change : 1}, 'change').min(0).max(1).step(0.1).name('change').onChange(
             function originalityValuee(d){
                 view._layers[0].attachedLayers[3].opacity = d
                 
                 view.notifyChange(true);
             }
-            
             
         );
 
@@ -277,7 +276,6 @@
         });
 
         view.addLayer(wfsBuildingLayer);
-
         var meshes = [];
         var wallsArray = [];
         var roofArray = [];
@@ -308,9 +306,10 @@
             if (edges) {//in order to enable style on the new loaded tiles
                 edgesArray.push(edges);
 
-                edges.material = ShadMatEdges;
+               edges.material = ShadMatEdges;
             }
-
+           
+        
         };
         const vertexShader = `
             #include <common>
@@ -346,7 +345,6 @@
                 vec4 posAbs = modelMatrix * vec4(newPos, 1.0);
                 vec4 posFinal = vec4(position, 1.0);
                 vZbottom = zbottom;
-               
                 distCentralPosBuffer = distance(posAbs.xyz, centralPosBuffer);
                 if (posAbs.x < Xmin || posAbs.x > Xmax || posAbs.y < Ymin || posAbs.y > Ymax || posAbs.z < Zmin || posAbs.z > Zmax) {
                     // Definitely not within the polygon!
@@ -417,8 +415,17 @@
             uniform float PointArea2;
             uniform float PointArea3;
             uniform float PointArea4;
-           
-
+            uniform float opacityWall;
+            uniform float uncertaintyStyle;
+            uniform float orientation;
+            //// 2D otation of space (uv coordinate)
+            vec2 rotate2D(vec2 _st, float _angle){
+                _st -= 0.5;
+                _st =  mat2(cos(_angle),-sin(_angle),
+                            sin(_angle),cos(_angle)) * _st;
+                _st += 0.5;
+                return _st;
+            }
 
 
             void main(){
@@ -428,1277 +435,242 @@
                 float interval;
                 interval = (queryZbottomMax - queryZbottomMin)/5.;
                 float fuzzDom = 3.; /// uncertainty domain
+                float lineWidth = 0.1;
+                vec2 st = vUv;
                 ///////// Stylization of Building in Polygon ROI using Coloe Palettes /////////////////
                 if(bufferCondition == 1. || distCentralPosBuffer<bufferDistance) { //buffer condition: the condition set for objects inside and outside of polygon buffer: 1: true, 0: false
-                    ///// focus objects in polygon ROI ///////
-                    if (paletteNo == 0.){
-                        if(vZbottom < queryZbottomMin+interval-fuzzDom){
+                    ///// focus objects in polygon and Circular ROI ///////
+                    vec3 colorr = vec3(0.0);
+                   
+                    if (paletteNo == 0. || paletteNo == 1. || paletteNo == 2. || paletteNo == 3. || paletteNo == 4. || paletteNo == 5. || paletteNo == 6. || paletteNo == 7. || paletteNo == 8. || paletteNo == 9. || paletteNo == 10. || paletteNo == 11.){
+                        if(uncertaintyStyle == 0.){
+                            
+                            if(vZbottom < queryZbottomMin+interval){
                                 vec3 colorr = vec3(0.0);
                                 float pct = abs(sin(u_time));
                                 colorr = mix(color1c1, class1, pct);
                                 gl_FragColor = vec4(colorr,1.0);
                                 //gl_FragColor = vec4(class1, 1.);  
-                        }
-                        else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c1, class1, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class1, 1.0);
                             }
-                            else {
+                            else if(vZbottom < queryZbottomMin+(2. * interval) && vZbottom > queryZbottomMin+interval){
                                 vec3 colorr = vec3(0.0);
                                 float pct = abs(sin(u_time));
                                 colorr = mix(color1c2, class2, pct);
                                 gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c2, class2, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class2, 1.0);
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
+                                //gl_FragColor = vec4(class2, 1.);  
                             }
-                            else {
+                            else if(vZbottom < queryZbottomMin+(3. * interval) && vZbottom > queryZbottomMin+(2. * interval)){
                                 vec3 colorr = vec3(0.0);
                                 float pct = abs(sin(u_time));
                                 colorr = mix(color1c3, class3, pct);
                                 gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c3, class3, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class3, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
+                                //gl_FragColor = vec4(class3, 1.);  
                             }
-                            else {
+                            else if(vZbottom < queryZbottomMin+(4. * interval) && vZbottom > queryZbottomMin+(3. * interval)){
                                 vec3 colorr = vec3(0.0);
                                 float pct = abs(sin(u_time));
                                 colorr = mix(color1c4, class4, pct);
                                 gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }   
-                        }
-                        else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c4, class4, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class4, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
+                                //gl_FragColor = vec4(class4, 1.);  
                             }
-                            else {
+                            else if(vZbottom > queryZbottomMin+(4. * interval)){
                                 vec3 colorr = vec3(0.0);
                                 float pct = abs(sin(u_time));
                                 colorr = mix(color1c5, class5, pct);
                                 gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class5, 1.0);
-                            }   
+                                //gl_FragColor = vec4(class5, 1.);  
+                            }
+                            else{
+                                gl_FragColor = vec4(0.5, 0.5, 0.5,1.0);
+                            }
+                    
+                        
                         }
+                        else if(uncertaintyStyle == 1.){
+                            if(vZbottom < queryZbottomMin+interval-fuzzDom){
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c1, class1, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                            }
+                            else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
+                                if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c1, class1, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }
+                                else {
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c2, class2, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }  
+                                
+                            }
+                            else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
+                                float pct = abs(sin(u_time));
+                                colorr = mix(color1c2, class2, pct);
+                                gl_FragColor = vec4(colorr,opacityWall);
+                            }
+                            else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
+                                if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c2, class2, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }
+                                else {
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c3, class3, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }  
+                            
+                            }
+                            else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
+                                float pct = abs(sin(u_time));
+                                colorr = mix(color1c3, class3, pct);
+                                gl_FragColor = vec4(colorr,opacityWall);
+                            }
+                            else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
+                                if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c3, class3, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }
+                                else {
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c4, class4, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }  
+                                
+                            }
+                            else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
+                                float pct = abs(sin(u_time));
+                                colorr = mix(color1c4, class4, pct);
+                                gl_FragColor = vec4(colorr,opacityWall);
+                            }
+                            else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
+                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c4, class4, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }
+                                else {
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c5, class5, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                } 
+                                
+                            }
 
-                        else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c5, class5, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class5, 1.);  
-                        }
-                        else{
-                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
+                            else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
+                                float pct = abs(sin(u_time));
+                                colorr = mix(color1c5, class5, pct);
+                                gl_FragColor = vec4(colorr,opacityWall);
+                            }
+                            else{
+                                gl_FragColor = vec4(0.5, 0.5, 0.5, opacityWall);
+                            }
                         }  
+                        else if (uncertaintyStyle == 2.){
+                            if(vZbottom < queryZbottomMin+interval-fuzzDom){
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c1, class1, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                            }
+                            else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
+                                float commulativePatternWidth = ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. );
+                                st = rotate2D(st,PI*orientation);
+                                //// hatch pattern based on uncertainty value
+                                if (fract(st.x * 5.) < 1. - commulativePatternWidth){
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c2, class2, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }
+                                else {
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c1, class1, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }  
+                                
+                            }
+                            else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
+                                float pct = abs(sin(u_time));
+                                colorr = mix(color1c2, class2, pct);
+                                gl_FragColor = vec4(colorr,opacityWall);
+                            }
+                            else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
+                                float commulativePatternWidth = ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. );
+                                st = rotate2D(st,PI*orientation);
+                                if (fract(st.x * 5.) < 1. - commulativePatternWidth){
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c3, class3, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }
+                                else {
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c2, class2, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }  
+                            
+                            }
+                            else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
+                                float pct = abs(sin(u_time));
+                                colorr = mix(color1c3, class3, pct);
+                                gl_FragColor = vec4(colorr,opacityWall);
+                            }
+                            else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
+                                float commulativePatternWidth = ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. );
+                                st = rotate2D(st,PI*orientation);
+                                if (fract(st.x * 5.) < 1. - commulativePatternWidth){
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c4, class4, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }
+                                else {
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c3, class3, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }  
+                                
+                            }
+                            else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
+                                float pct = abs(sin(u_time));
+                                colorr = mix(color1c4, class4, pct);
+                                gl_FragColor = vec4(colorr,opacityWall);
+                            }
+                            else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
+                                float commulativePatternWidth = ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. );
+                                st = rotate2D(st,PI*orientation);
+                                if (fract(st.x * 5.) < 1. - commulativePatternWidth){
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c5, class5, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                }
+                                else {
+                                    float pct = abs(sin(u_time));
+                                    colorr = mix(color1c4, class4, pct);
+                                    gl_FragColor = vec4(colorr,opacityWall);
+                                } 
+                                
+                            }
+
+                            else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
+                                float pct = abs(sin(u_time));
+                                colorr = mix(color1c5, class5, pct);
+                                gl_FragColor = vec4(colorr,opacityWall);
+                            }
+                            else{
+                                gl_FragColor = vec4(0.5, 0.5, 0.5, opacityWall);
+                            }
+                        }
+                        
                     
                     }
-                    else if (paletteNo == 1.){
-                        if(vZbottom < queryZbottomMin+interval-fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c1, class1, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                               
-                            //gl_FragColor = vec4(class1, 1.);  
-                        }
-                        else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c1, class1, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class1, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c2, class2, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class2, 1.0);
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c3, class3, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class3, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }   
-                        }
-                        else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c4, class4, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class4, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c5, class5, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class5, 1.0);
-                            }   
-                        }
-
-                        else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c5, class5, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class5, 1.);  
-                        }
-                        else{
-                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
-                        } 
-                    }
-                    else if (paletteNo == 2.){
-                        if(vZbottom < queryZbottomMin+interval-fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c1, class1, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class1, 1.);  
-                        }
-                        else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c1, class1, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class1, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c2, class2, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class2, 1.0);
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c3, class3, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class3, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }   
-                        }
-                        else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c4, class4, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class4, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c5, class5, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class5, 1.0);
-                            }   
-                        }
-
-                        else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c5, class5, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class5, 1.);  
-                        }
-                        else{
-                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
-                        } 
-                    }
-                    else if (paletteNo == 3.){
-                        if(vZbottom < queryZbottomMin+interval-fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c1, class1, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class1, 1.);  
-                        }
-                        else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c1, class1, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class1, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
-                            
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c2, class2, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class2, 1.0);
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c3, class3, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class3, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }   
-                        }
-                        else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class4, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c5, class5, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class5, 1.0);
-                            }   
-                        }
-
-                        else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c5, class5, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class5, 1.);  
-                        }
-                        else{
-                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
-                        } 
-                    }
-                    else if (paletteNo == 4.){
-                        if(vZbottom < queryZbottomMin+interval-fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c1, class1, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class1, 1.);  
-                        }
-                        else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c1, class1, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class1, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c2, class2, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class2, 1.0);
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c3, class3, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class3, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }   
-                        }
-                        else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class4, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c5, class5, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class5, 1.0);
-                            }   
-                        }
-
-                        else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c5, class5, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class5, 1.);  
-                        }
-                        else{
-                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
-                        } 
-                    }
-                    else if (paletteNo == 5.){
-                        if(vZbottom < queryZbottomMin+interval-fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c1, class1, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class1, 1.);  
-                        }
-                        else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c1, class1, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class1, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c2, class2, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class2, 1.0);
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c3, class3, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class3, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }   
-                        }
-                        else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c4, class4, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class4, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c5, class5, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class5, 1.0);
-                            }   
-                        }
-
-                        else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c5, class5, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class5, 1.);  
-                        }
-                        else{
-                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
-                        } 
-                    }
-                    else if (paletteNo == 6.){
-                        if(vZbottom < queryZbottomMin+interval-fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c1, class1, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class1, 1.);  
-                        }
-                        else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c1, class1, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class1, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c2, class2, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class2, 1.0);
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c3, class3, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class3, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }   
-                        }
-                        else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c4, class4, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class4, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c5, class5, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class5, 1.0);
-                            }   
-                        }
-
-                        else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c5, class5, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class5, 1.);  
-                        }
-                        else{
-                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
-                        } 
-                    }
-                    else if (paletteNo == 7.){
-                        if(vZbottom < queryZbottomMin+interval-fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c1, class1, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class1, 1.);  
-                        }
-                        else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c1, class1, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class1, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c2, class2, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class2, 1.0);
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c3, class3, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class3, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }   
-                        }
-                        else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c4, class4, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class4, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c5, class5, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class5, 1.0);
-                            }   
-                        }
-
-                        else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c5, class5, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class5, 1.);  
-                        }
-                        else{
-                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
-                        } 
-                    }
-                    else if (paletteNo == 8.){
-                        if(vZbottom < queryZbottomMin+interval-fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c1, class1, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class1, 1.);  
-                        }
-                        else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c1, class1, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class1, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c2, class2, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class2, 1.0);
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c3, class3, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class3, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }   
-                        }
-                        else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c4, class4, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class4, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c5, class5, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class5, 1.0);
-                            }   
-                        }
-
-                        else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c5, class5, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class5, 1.);  
-                        }
-                        else{
-                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
-                        } 
-                    }
-                    else if (paletteNo == 9.){
-                        if(vZbottom < queryZbottomMin+interval-fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c1, class1, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class1, 1.);  
-                        }
-                        else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c1, class1, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class1, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c2, class2, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class2, 1.0);
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c3, class3, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class3, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }   
-                        }
-                        else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c4, class4, pct);
-                            gl_FragColor = vec4(colorr,1.0);                            
-                            //gl_FragColor = vec4(class4, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c5, class5, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class5, 1.0);
-                            }   
-                        }
-
-                        else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c5, class5, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class5, 1.);  
-                        }
-                        else{
-                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
-                        } 
-                    }
-                    else if (paletteNo == 10.){
-                        if(vZbottom < queryZbottomMin+interval-fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c1, class1, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class1, 1.);  
-                        }
-                        else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c1, class1, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class1, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c2, class2, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class2, 1.0);
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c3, class3, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class3, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }   
-                        }
-                        else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c4, class4, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class4, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c5, class5, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class5, 1.0);
-                            }   
-                        }
-
-                        else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c5, class5, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class5, 1.);  
-                        }
-                        else{
-                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
-                        } 
-                    }
-                    else if (paletteNo == 11.){
-                        if(vZbottom < queryZbottomMin+interval-fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c1, class1, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class1, 1.);  
-                        }
-                        else if(vZbottom < (queryZbottomMin+interval+fuzzDom) && vZbottom > (queryZbottomMin+interval-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+interval+fuzzDom)-(queryZbottomMin+interval-fuzzDom)))*(vZbottom-(queryZbottomMin+interval-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c1, class1, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class1, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+interval+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c2, class2, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class2, 1.0);
-                        }
-                        else if(vZbottom < (queryZbottomMin+(2.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(2.*interval)+fuzzDom)-(queryZbottomMin+(2.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(2.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c2, class2, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class2, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }  
-                        }
-                        else if(vZbottom < (queryZbottomMin+(3.*interval)-fuzzDom) && vZbottom > (queryZbottomMin+(2.*interval)+fuzzDom)){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c3, class3, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class3, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(3.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(3.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(3.*interval)+fuzzDom)-(queryZbottomMin+(3.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(3.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c3, class3, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class3, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }   
-                        }
-                        else if(vZbottom < queryZbottomMin+(4.*interval)-fuzzDom && vZbottom > queryZbottomMin+(3.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c4, class4, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class4, 1.);  
-                        }
-                        else if (vZbottom < (queryZbottomMin+(4.*interval)+fuzzDom) && vZbottom > (queryZbottomMin+(4.*interval)-fuzzDom)){
-                            if(vUv.x > 0. && vUv.x < ( (-1./((queryZbottomMin+(4.*interval)+fuzzDom)-(queryZbottomMin+(4.*interval)-fuzzDom)))*(vZbottom-(queryZbottomMin+(4.*interval)-fuzzDom))+1. ) ){
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c4, class4, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class4, 1.0);
-                            }
-                            else {
-                                vec3 colorr = vec3(0.0);
-                                float pct = abs(sin(u_time));
-                                colorr = mix(color1c5, class5, pct);
-                                gl_FragColor = vec4(colorr,1.0);
-                                //gl_FragColor = vec4(class5, 1.0);
-                            }   
-                        }
-
-                        else if(vZbottom > queryZbottomMin+(4.*interval)+fuzzDom){
-                            vec3 colorr = vec3(0.0);
-                            float pct = abs(sin(u_time));
-                            colorr = mix(color1c5, class5, pct);
-                            gl_FragColor = vec4(colorr,1.0);
-                            //gl_FragColor = vec4(class5, 1.);  
-                        }
-                        else{
-                            gl_FragColor = vec4(0.5, 0.5, 0.5, 1.);
-                        } 
-                    }
+                    
                 }
                
                 else {
                     ////// context Objects ///////
-                    gl_FragColor = vec4(0.5, 0.5, 0.5, 1.); 
+                   
+                    gl_FragColor = vec4(0.5, 0.5, 0.5, opacityWall); 
                 }
             }
            
@@ -1737,13 +709,19 @@
             uniform vec3 class3;
             uniform vec3 class4;
             uniform vec3 class5;
+            uniform vec3 color1c1;
+            uniform vec3 color1c2;
+            uniform vec3 color1c3;
+            uniform vec3 color1c4;
+            uniform vec3 color1c5;
             uniform float u_time;
+            uniform float uncertaintyStyle;
             
             void main(){
                 #include <logdepthbuf_fragment>
-       
-                    ////// context Objects ///////
-                    gl_FragColor = vec4(1., 1., 1., 1.); 
+                
+                gl_FragColor = vec4(1., 1., 1., 1.); 
+              
                 
               
             }
@@ -1764,18 +742,31 @@
             uniform float Zmin;
             uniform float Zmax;
             uniform float area;
+            uniform float opacityEdge;
+            uniform vec3 colorEdge;
             varying float vZbottom;
             uniform float bufferDistance;
             uniform float paletteNo;
-            
+            uniform float uncertaintyStyle;
 
 
             void main(){
             #include <logdepthbuf_fragment>
-                gl_FragColor = vec4(0., 0., 0., 1.);
+              
+                gl_FragColor = vec4(colorEdge, opacityEdge);
+           
             }
             `;
-       
+        var class1 = new THREE.Color();
+        var class2 = new THREE.Color();
+        var class3 = new THREE.Color();
+        var class4 = new THREE.Color();
+        var class5 = new THREE.Color();
+        var color1c1 = new THREE.Color();
+        var color1c2 = new THREE.Color();
+        var color1c3 = new THREE.Color();
+        var color1c4 = new THREE.Color();
+        var color1c5 = new THREE.Color();
         ////////////// Points for Polygon Region of Interest (ROI) /////////
         let P1 = new THREE.Vector3();
         let P2 = new THREE.Vector3();
@@ -1830,17 +821,23 @@
                 queryZbottomMin: { type: 'f', value: 0. },
                 queryZbottomMax: { type: 'f', value: 100. },
                 paletteNo: { type: 'f', value: 0 },
-                class1: { type: 'c', value: new THREE.Color(0XFFffff) },
-                class2: { type: 'c', value: new THREE.Color(0XFF0000) },
-                class3: { type: 'c', value: new THREE.Color(0XFF0000) },
-                class4: { type: 'c', value: new THREE.Color(0XFF0000) },
-                class5: { type: 'c', value: new THREE.Color(0XFF0000) },
-                color1c1: {type: 'c', value: new THREE.Color(color1c1)},
-                color1c2: {type: 'c', value: new THREE.Color(color1c2)},
-                color1c3: {type: 'c', value: new THREE.Color(color1c3)},
-                color1c4: {type: 'c', value: new THREE.Color(color1c4)},
-                color1c5: {type: 'c', value: new THREE.Color(color1c5)},
+                class1: { type: 'c', value: new THREE.Color() },
+                class2: { type: 'c', value: new THREE.Color() },
+                class3: { type: 'c', value: new THREE.Color() },
+                class4: { type: 'c', value: new THREE.Color() },
+                class5: { type: 'c', value: new THREE.Color() },
+                color1c1: {type: 'c', value: new THREE.Color(0Xfce303)},
+                color1c2: {type: 'c', value: new THREE.Color(0Xfce303)},
+                color1c3: {type: 'c', value: new THREE.Color(0Xfce303)},
+                color1c4: {type: 'c', value: new THREE.Color(0Xfce303)},
+                color1c5: {type: 'c', value: new THREE.Color(0Xfce303)},
                 u_time: {type: 'f', value: 0},
+                colorEdge: { type: 'c', value: new THREE.Color(0X000000) },
+                opacityEdge: { type: 'f', value: 1 },
+                opacityWall: { type: 'f', value: 1 },
+                classificationMethod: { type: 'f', value: 1 },
+                uncertaintyStyle: { type: 'f', value: 1 },
+                orientation: { type: 'f', value: 0.25 },
 
             };
             let meshMaterial = new THREE.ShaderMaterial({
@@ -1856,20 +853,11 @@
         
         var ShadMatRoof = createMaterial(vertexShader, fragmentShader_roof, new THREE.Color(0Xa19f9f));
         var ShadMatWalls = createMaterial(vertexShader, fragmentShader_walls, new THREE.Color(0Xa19f9f));
-        var ShadMatEdges = createMaterial(vertexShader, fragmentShader_edges, new THREE.Color(0Xffffff));
+        var ShadMatEdges = createMaterial(vertexShader, fragmentShader_edges, new THREE.Color(0Xa19f9f));
 
 
         ////////////////////////////////////////////// USER INTERACTION //////////////////////////////////////////////////
-        var class1 = new THREE.Color();
-        var class2 = new THREE.Color();
-        var class3 = new THREE.Color();
-        var class4 = new THREE.Color();
-        var class5 = new THREE.Color();
-        var color1c1 = new THREE.Color();
-        var color1c2 = new THREE.Color();
-        var color1c3 = new THREE.Color();
-        var color1c4 = new THREE.Color();
-        var color1c5 = new THREE.Color();
+       
         ///////////// Polygon ROI /////////////
         var bufferPolygon = function () {
             this.SelectVertices = function ssss() {
@@ -1996,6 +984,7 @@
                             vec3 = new THREE.Vector3(converted.x, converted.y, converted.z);
                             ShadMatWalls.uniforms.centralPosBuffer.value = vec3;
                             ShadMatRoof.uniforms.centralPosBuffer.value = vec3;
+
                             console.log("center", vec3);
                         }
 
@@ -2006,7 +995,8 @@
             }
 
         }
-
+       
+        
 
         var circle = ROI.addFolder('Circle');
         var texttt = new circleBuffer();
@@ -2026,14 +1016,23 @@
                 ShadMatWalls.uniforms.bufferDistance.value = m;
                 ShadMatRoof.uniforms.bufferDistance.value = m;
                 view.notifyChange(true);
-
+                ////////////////////
+                
             }
 
         );
+    
+  /*    var aa = view.pickFeaturesAt(()=>{
+            Math.distance(ShadMatWalls.uniforms.centralPosBuffer.value,(0,0,0)) < ShadMatWalls.uniforms.bufferDistance.value;
+           
+        })
+console.log("results", aa);*/
 
+        
         //////////////// Query on Attribute /////////////////
-        var Query = menuGlobe.gui.addFolder('Query on Attribute')
-        var Zbottom = Query.addFolder('Zbottom')
+        var classification = menuGlobe.gui.addFolder('Classification')
+        var attributeQuery = classification.addFolder('Attribute Query')
+        var Zbottom = attributeQuery.addFolder('Zbottom')
 
         var queryZbottomMin = Zbottom.add({ queryZbottomMin: 0. }, 'queryZbottomMin').min(0).max(100).step(1).name('min').onChange(
             function heightValue(m) {
@@ -2053,11 +1052,158 @@
             }
 
         );
+        //////////////// classification Method /////////
+        var classificationMethod = classification.addFolder('Method')
+        var classificationOptions = {
+            methods: '',
+        };
+        var methods = classificationMethod.add(classificationOptions, 'methods', ["Equal Interval",]).name('Method').listen();
+        var classificationChange = methods.onChange(() => {
+            /// setting u_time=0 with each palette changes & retrieving first color for interpolation
+               
+            ShadMatWalls.uniforms.color1c1.value = class1;
+            ShadMatWalls.uniforms.color1c2.value = class2;
+            ShadMatWalls.uniforms.color1c3.value = class3;
+            ShadMatWalls.uniforms.color1c4.value = class4;
+            ShadMatWalls.uniforms.color1c5.value = class5;
+            ShadMatRoof.uniforms.color1c1.value = class1;
+            ShadMatRoof.uniforms.color1c2.value = class2;
+            ShadMatRoof.uniforms.color1c3.value = class3;
+            ShadMatRoof.uniforms.color1c4.value = class4;
+            ShadMatRoof.uniforms.color1c5.value = class5;
+            ////////////////////////////////////////////////////////////
+            if (classificationOptions.methods === 'Equal Interval') {
+                class1 = new THREE.Color(colorbrewer.YlGn[5][0]);
+                class2 = new THREE.Color(colorbrewer.YlGn[5][1]);
+                class3 = new THREE.Color(colorbrewer.YlGn[5][2]);
+                class4 = new THREE.Color(colorbrewer.YlGn[5][3]);
+                class5 = new THREE.Color(colorbrewer.YlGn[5][4]);
+                var vv= 0;
+                view.addFrameRequester(itowns.MAIN_LOOP_EVENTS.BEFORE_RENDER, () => { 
+                        vv = vv + 0.03;
+                        if(vv<1.5708){
+                            ShadMatWalls.uniforms.u_time.value = vv ;
+                            ShadMatRoof.uniforms.u_time.value = vv ;
+                        }
+          
+                    view.notifyChange(true);
+                });
+
+                ShadMatWalls.uniforms.class1.value = class1;
+                ShadMatRoof.uniforms.class1.value = class1;
+                ShadMatWalls.uniforms.class2.value = class2;
+                ShadMatRoof.uniforms.class2.value = class2;
+                ShadMatWalls.uniforms.class3.value = class3;
+                ShadMatRoof.uniforms.class3.value = class3;
+                ShadMatWalls.uniforms.class4.value = class4;
+                ShadMatRoof.uniforms.class4.value = class4;
+                ShadMatWalls.uniforms.class5.value = class5;
+                ShadMatRoof.uniforms.class5.value = class5;
+                ShadMatWalls.uniforms.paletteNo.value = 0;
+                ShadMatRoof.uniforms.paletteNo.value = 0;
+                //// calling shader for simple classification without involving uncertainty ////
+                ShadMatWalls.uniforms.uncertaintyStyle.value = 0;
+                ShadMatRoof.uniforms.uncertaintyStyle.value = 0;
+                ShadMatEdges.uniforms.uncertaintyStyle.value = 0;
+                /////////// Interactive change of legend color ///////////:
+                var spanArray = document.getElementsByTagName('span');
+                var number_spans = spanArray.length;
+
+                for (var i = 0; i < number_spans; i++) {
+
+                    var target0 = spanArray[0]; // first pan tag
+                    var target2 = spanArray[2];
+                    var target4 = spanArray[4];
+                    var target6 = spanArray[6];
+                    var target8 = spanArray[8];
 
 
-        ///////////// Color Palette Selection //////////
+                    target0.style.background = colorbrewer.YlGn[5][0]
+                    target2.style.background = colorbrewer.YlGn[5][1]
+                    target4.style.background = colorbrewer.YlGn[5][2]
+                    target6.style.background = colorbrewer.YlGn[5][3]
+                    target8.style.background = colorbrewer.YlGn[5][4]
+
+
+                    var m = spanArray[1]
+                    var n = spanArray[3]
+                    m.innerText = "yo";
+                    n.innerText = "foo"
+
+                }
+                view.notifyChange();
+            }
+           
+        });
+        
         var Style_criteria = menuGlobe.gui.addFolder('Stylization')
-        var colorPalettes = Style_criteria.addFolder('colorPalette')
+        ///////////////// Uncertainty Style ///////////
+        var uncertaintyStyle = Style_criteria.addFolder('Uncertainty Style');
+       
+        var uncertaintyOptions = {
+            uncertaintyMethods: '',
+        };
+        var uncertaintyMethods = uncertaintyStyle.add(uncertaintyOptions, 'uncertaintyMethods', ["None", "side-by-side", "Hatch"]).name('Method').listen();
+        var uncertaintyChange = uncertaintyMethods.onChange(() => {
+           
+            if (uncertaintyOptions.uncertaintyMethods === 'None') {
+                $(hatchOriantation.domElement).attr("hidden", true);
+                ShadMatWalls.uniforms.uncertaintyStyle.value = 0;
+                ShadMatRoof.uniforms.uncertaintyStyle.value = 0;
+                ShadMatEdges.uniforms.uncertaintyStyle.value = 0;
+
+                view.notifyChange();
+            }
+            else if (uncertaintyOptions.uncertaintyMethods === 'side-by-side') {
+                $(hatchOriantation.domElement).attr("hidden", true);
+                ShadMatWalls.uniforms.uncertaintyStyle.value = 1;
+                ShadMatRoof.uniforms.uncertaintyStyle.value = 1;
+                ShadMatEdges.uniforms.uncertaintyStyle.value = 1;
+
+                view.notifyChange();
+            }
+            else if (uncertaintyOptions.uncertaintyMethods === 'Hatch') {
+                $(hatchOriantation.domElement).attr("hidden", false);
+                ShadMatWalls.uniforms.uncertaintyStyle.value = 2;
+                ShadMatRoof.uniforms.uncertaintyStyle.value = 2;
+                ShadMatEdges.uniforms.uncertaintyStyle.value = 2;
+
+                view.notifyChange();
+            }
+           
+           
+        });
+        //// interactive setting of hatch pattern orientation
+        var hatchOriantation = uncertaintyStyle.add({hatchOriantation : 0.25}, 'hatchOriantation').min(0).max(1).step(0.01).name('Orientation').onChange(
+            function originalityValue(m){
+                ShadMatWalls.uniforms.orientation.value = m;
+                ShadMatRoof.uniforms.orientation.value = m;
+                ShadMatEdges.uniforms.orientation.value = m;
+                view.notifyChange(true);
+
+            }
+        );
+        /////////// Edge Stylization /////////////
+        var edgeStylization = Style_criteria.addFolder('Edge Style')
+        var colorEdgeFolder = edgeStylization.addFolder('Color')
+        var colorEdge = colorEdgeFolder.addColor({Color : ShadMatEdges.uniforms.colorEdge.value.getHex()}, 'Color').onChange(
+            function updateColorEdges(value){
+                ShadMatEdges.uniforms.colorEdge.value = new THREE.Color(value);
+                view.notifyChange(true);
+            }
+        );
+        var colorOpacityFolder = edgeStylization.addFolder('Opacity')
+        var opacityEdge = colorOpacityFolder.add({Opacity : 1}, 'Opacity').min(0).max(1).step(0.1).onChange(
+            function updateOpacityRoof(value){
+                ShadMatEdges.uniforms.opacityEdge.value = value;
+                view.notifyChange(true);
+            }
+        );
+        ////////////////////////////////////////////////////
+        ///////////// Color Palette Selection //////////
+        var wallStylization = Style_criteria.addFolder('Façade Style')
+        var colorWallFolder = wallStylization.addFolder('Color');
+        var colorPalettes = colorWallFolder.addFolder('colorPalette')
         var Brewer = colorPalettes.addFolder("Brewer");
         var options = {
             palette: 'YlGn',
@@ -3041,6 +2187,7 @@
                     /////////////// convert hsl to hex and set to class of color palettes //////:
                     classOne = LinearColorInterpolator.findColorBetween(l, r, 4*domain);
                     class1 = RGBToHex(classOne.r, classOne.g, classOne.b)
+                    
                     console.log("class1-linear",class1)
                     classTwo = LinearColorInterpolator.findColorBetween(l, r, 3*domain);
                     class2 = RGBToHex(classTwo.r, classTwo.g, classTwo.b)
@@ -3054,6 +2201,7 @@
                     classFive = LinearColorInterpolator.findColorBetween(l, r, 0);
                     class5 = RGBToHex(classFive.r, classFive.g, classFive.b)
                     console.log("class5-linear",class5)
+                    
                     //// interpolating between colors as user change color
                     var vv= 0;
                     view.addFrameRequester(itowns.MAIN_LOOP_EVENTS.BEFORE_RENDER, () => { 
@@ -3111,9 +2259,9 @@
             );
 
         ////////////// update color paletee //////////
-        var updatePalette = Style_criteria.addFolder("Palette Change")
+        var updatePalette = colorWallFolder.addFolder("Palette Change")
         var paletteClass1 = updatePalette.addColor({class1 : ShadMatWalls.uniforms.color.value.getHex()}, 'class1').onChange(
-    
+            
                 function updateColorEdges(value){
                     ShadMatWalls.uniforms.color1c1.value = class1;
                     ShadMatWalls.uniforms.color1c2.value = class2;
@@ -3391,7 +2539,16 @@
             }
 
         );
+        //////// opacity of wall //////////
+        var opacityWallFolder = wallStylization.addFolder('Opacity');
+        var opacityWall = opacityWallFolder.add({Opacity : 1}, 'Opacity').min(0).max(1).step(0.1).onChange(
+            function updateOpacityRoof(value){
+                ShadMatWalls.uniforms.opacityWall.value = value;
+                view.notifyChange(true);
+            }
+        );
 
+        //var colorWallFolder = wallStylization.addFolder('Color');
         //////////////////////////////////////////////////////////
         /////////////// Measurements: Distance, Diameter, Area //////
         var Measurements = menuGlobe.gui.addFolder('Measurements');
@@ -3741,14 +2898,14 @@
         //////////////// GUI Design /////////
         $(baseMap.domElement).attr("hidden", true);
         $(ROI.domElement).attr("hidden", true);
-        $(Query.domElement).attr("hidden", true);
+        $(classification.domElement).attr("hidden", true);
         $(Style_criteria.domElement).attr("hidden", true);
         $(Measurements.domElement).attr("hidden", true);
         
         var taskOptions = {
                 Tasks: '',
             }; 
-            var Tasks = cartographicTasks.add(taskOptions, 'Tasks', [ "Change BaseMap", "Region of Interest","Attribute Query","Stylization", "Measurements"]).name('Tasks').listen();
+            var Tasks = cartographicTasks.add(taskOptions, 'Tasks', [ "Change BaseMap", "Region of Interest","Classification","Stylization", "Measurements"]).name('Tasks').listen();
             //var vv= 0;
             var chooseTasks = Tasks.onChange(() => {
                 
@@ -3757,7 +2914,7 @@
                     //// initialization
                     $(baseMap.domElement).attr("hidden", false);
                     $(ROI.domElement).attr("hidden", true);
-                    $(Query.domElement).attr("hidden", true);
+                    $(classification.domElement).attr("hidden", true);
                     $(Style_criteria.domElement).attr("hidden", true);
                     $(Measurements.domElement).attr("hidden", true);
                     $(baseMap).attr("closed", false)
@@ -3767,16 +2924,16 @@
                     //// initialization
                     $(baseMap.domElement).attr("hidden", true);
                     $(ROI.domElement).attr("hidden", false);
-                    $(Query.domElement).attr("hidden", true);
+                    $(classification.domElement).attr("hidden", true);
                     $(Style_criteria.domElement).attr("hidden", true);
                     $(Measurements.domElement).attr("hidden", true);
                     $(ROI).attr("closed", false)
                 }
-                else if (taskOptions.Tasks==='Attribute Query'){
+                else if (taskOptions.Tasks==='Classification'){
                     //// initialization
                     $(baseMap.domElement).attr("hidden", true);
                     $(ROI.domElement).attr("hidden", true);
-                    $(Query.domElement).attr("hidden", false);
+                    $(classification.domElement).attr("hidden", false);
                     $(Style_criteria.domElement).attr("hidden", true);
                     $(Measurements.domElement).attr("hidden", true);
                     $(Query).attr("closed", false)
@@ -3785,16 +2942,17 @@
                     //// initialization
                     $(baseMap.domElement).attr("hidden", true);
                     $(ROI.domElement).attr("hidden", true);
-                    $(Query.domElement).attr("hidden", true);
+                    $(classification.domElement).attr("hidden", true);
                     $(Style_criteria.domElement).attr("hidden", false);
                     $(Measurements.domElement).attr("hidden", true);
                     $(Style_criteria).attr("closed", false)
+                    $(hatchOriantation.domElement).attr("hidden", true);
                 }
                 else if (taskOptions.Tasks==='Measurements'){
                     //// initialization
                     $(baseMap.domElement).attr("hidden", true);
                     $(ROI.domElement).attr("hidden", true);
-                    $(Query.domElement).attr("hidden", true);
+                    $(classification.domElement).attr("hidden", true);
                     $(Style_criteria.domElement).attr("hidden", true);
                     $(Measurements.domElement).attr("hidden", false);
                     $(Measurements).attr("closed", false)
@@ -3804,6 +2962,38 @@
  
  
             });
+            //////////// classification interval change on map legend
+            view.addEventListener(itowns.GLOBE_VIEW_EVENTS.GLOBE_INITIALIZED, function () {
+                view.addFrameRequester(itowns.MAIN_LOOP_EVENTS.AFTER_RENDER, () => {
+                   
+                var spanArray = document.getElementsByTagName('span');
+                var number_spans = spanArray.length ;
+                numberOfClasses = 5;
+                interval = ((ShadMatWalls.uniforms.queryZbottomMax.value)-(ShadMatWalls.uniforms.queryZbottomMin.value))/5;
+                for( var i = 0; i < number_spans ; i++ ){
+
+                    var interval1 = spanArray[1]
+                    var interval2 = spanArray[3]
+                    var interval3 = spanArray[5]
+                    var interval4 = spanArray[7]
+                    var interval5 = spanArray[9]
+                    interval1.innerText = ShadMatWalls.uniforms.queryZbottomMin.value + "-"+ ((ShadMatWalls.uniforms.queryZbottomMin.value)+interval);
+                    interval2.innerText = ((ShadMatWalls.uniforms.queryZbottomMin.value)+interval) + "-"+ ((ShadMatWalls.uniforms.queryZbottomMin.value)+(2*interval));
+                    interval3.innerText = ((ShadMatWalls.uniforms.queryZbottomMin.value)+(2*interval)) + "-"+ ((ShadMatWalls.uniforms.queryZbottomMin.value)+(3*interval))
+                    interval4.innerText = ((ShadMatWalls.uniforms.queryZbottomMin.value)+(3*interval)) + "-"+ ((ShadMatWalls.uniforms.queryZbottomMin.value)+(4*interval))
+                    interval5.innerText = ((ShadMatWalls.uniforms.queryZbottomMin.value)+(4*interval)) + "-"+ ((ShadMatWalls.uniforms.queryZbottomMin.value)+(5*interval))
+
+                }
+
+                
+
+               
+                view.notifyChange(true);
+             
+                });
+         
+            });
+            
             ////////////////// setting GUI style ///////////
             var basemapFolder = document.getElementsByClassName('title')[3];
             basemapFolder.style.backgroundPosition = '90% center';
@@ -3856,14 +3046,17 @@
             circleBufferDistance.style.backgroundColor = "#e5f5e0";
             circleBufferDistance.style.color = "#000000"
 
-            var attributeFolder = document.getElementsByClassName('title')[7];
-            attributeFolder.style.backgroundPosition = '90% center';
-            attributeFolder.style.backgroundSize = "20px 20px";
-            attributeFolder.style.backgroundImage = "url('icons/query.png')";
-            attributeFolder.style.color = "#ffee03"
-            attributeFolder.style.fontWeight = "bold";
+            var classificationFolder = document.getElementsByClassName('title')[7];
+            classificationFolder.style.backgroundPosition = '90% center';
+            classificationFolder.style.backgroundSize = "20px 20px";
+            classificationFolder.style.backgroundImage = "url('icons/classification.png')";
+            classificationFolder.style.color = "#ffee03"
+            classificationFolder.style.fontWeight = "bold";
 
-            var zbottomFolder = document.getElementsByClassName('title')[8]
+            var attributeFolder = document.getElementsByClassName('title')[8];
+            attributeFolder.style.color = "#ffee03"
+
+            var zbottomFolder = document.getElementsByClassName('title')[9]
             zbottomFolder.style.color = "#de2d26"
 
             var zbottomMin = document.getElementsByClassName('cr number has-slider')[2]
@@ -3874,63 +3067,104 @@
             zbottomMax.style.backgroundColor = "#fc9272";
             zbottomMax.style.color = "#000000"
 
-            var stylizationFolder = document.getElementsByClassName('title')[9];
+            var classMethodFolder = document.getElementsByClassName('title')[10];
+            classMethodFolder.style.color = "#ffee03"
+
+            var stylizationFolder = document.getElementsByClassName('title')[11];
             stylizationFolder.style.backgroundPosition = '90% center';
             stylizationFolder.style.backgroundSize = "20px 20px";
             stylizationFolder.style.backgroundImage = "url('icons/stylization.png')";
             stylizationFolder.style.color = "#ffee03"
             stylizationFolder.style.fontWeight = "bold";
 
-            var colorPaletteFolder = document.getElementsByClassName('title')[10];
+            var edgeStyleFolder = document.getElementsByClassName('title')[13];
+            edgeStyleFolder.style.backgroundPosition = '90% center';
+            edgeStyleFolder.style.backgroundSize = "20px 20px";
+            edgeStyleFolder.style.backgroundImage = "url('icons/edges.png')";
+            edgeStyleFolder.style.color = "#ffee03"
+
+            var edgeColorFolder = document.getElementsByClassName('title')[14];
+            edgeColorFolder.style.backgroundPosition = '90% center';
+            edgeColorFolder.style.backgroundSize = "20px 20px";
+            edgeColorFolder.style.backgroundImage = "url('icons/colorPicker.png')";
+            edgeColorFolder.style.color = "#ff0000"
+
+            var edgeOpacityFolder = document.getElementsByClassName('title')[15];
+            edgeOpacityFolder.style.backgroundPosition = '90% center';
+            edgeOpacityFolder.style.backgroundSize = "20px 20px";
+            edgeOpacityFolder.style.backgroundImage = "url('icons/opacity.png')";
+            edgeOpacityFolder.style.color = "#00ff00"
+
+            var facadeStyleFolder = document.getElementsByClassName('title')[16];
+            facadeStyleFolder.style.backgroundPosition = '90% center';
+            facadeStyleFolder.style.backgroundSize = "20px 20px";
+            facadeStyleFolder.style.backgroundImage = "url('icons/wall.png')";
+            facadeStyleFolder.style.color = "#ffee03"
+
+            var facadeColorFolder = document.getElementsByClassName('title')[17];
+            facadeColorFolder.style.backgroundPosition = '90% center';
+            facadeColorFolder.style.backgroundSize = "20px 20px";
+            facadeColorFolder.style.backgroundImage = "url('icons/colorPicker.png')";
+            facadeColorFolder.style.color = "#ff0000"
+
+            
+
+            var colorPaletteFolder = document.getElementsByClassName('title')[18];
             colorPaletteFolder.style.backgroundPosition = '90% center';
             colorPaletteFolder.style.backgroundSize = "20px 20px";
             colorPaletteFolder.style.backgroundImage = "url('icons/colorPalette.png')";
             colorPaletteFolder.style.color = "#ffee03"
 
-            var brewerFolder = document.getElementsByClassName('title')[11]
-            brewerFolder.style.color = "#3182bd"
+            var brewerFolder = document.getElementsByClassName('title')[19]
+            brewerFolder.style.color = "#0000ff"
             brewerFolder.style.backgroundPosition = '90% center';
             brewerFolder.style.backgroundSize = "20px 20px";
             brewerFolder.style.backgroundImage = "url('icons/brewer.png')";
 
             var brewerPalette = document.getElementsByClassName('cr string')[1];
-            brewerPalette.style.backgroundColor = "#3182bd";
+            brewerPalette.style.backgroundColor = "#0000ff";
             brewerPalette.style.color = "#000000"
 
-            var lightnessFolder = document.getElementsByClassName('title')[12]
-            lightnessFolder.style.color = "#de2d26"
+            var lightnessFolder = document.getElementsByClassName('title')[20]
+            lightnessFolder.style.color = "#ff0000"
             lightnessFolder.style.backgroundPosition = '90% center';
             lightnessFolder.style.backgroundSize = "20px 20px";
             lightnessFolder.style.backgroundImage = "url('icons/lightness-step.png')";
             
-            var lightnessFunction = document.getElementsByClassName('cr color')[0];
-            lightnessFunction.style.backgroundColor = "#de2d26";
+            var lightnessFunction = document.getElementsByClassName('cr color')[1];
+            lightnessFunction.style.backgroundColor = "#ff0000";
             lightnessFunction.style.color = "#000000"
 
-            var linearInterpolationFolder = document.getElementsByClassName('title')[13]
-            linearInterpolationFolder.style.color = "#31a354"
+            var linearInterpolationFolder = document.getElementsByClassName('title')[21]
+            linearInterpolationFolder.style.color = "#00ff00"
             linearInterpolationFolder.style.backgroundPosition = '90% center';
             linearInterpolationFolder.style.backgroundSize = "20px 20px";
             linearInterpolationFolder.style.backgroundImage = "url('icons/linearInterpolation.png')";
 
             var linearFunction = document.getElementsByClassName('cr color')[1];
-            linearFunction.style.backgroundColor = "#31a354";
+            linearFunction.style.backgroundColor = "#00ff00";
             linearFunction.style.color = "#000000"
 
-            var paletteChangeFolder = document.getElementsByClassName('title')[14]
+            var paletteChangeFolder = document.getElementsByClassName('title')[22]
             paletteChangeFolder.style.color = "#ffee03"
             paletteChangeFolder.style.backgroundPosition = '90% center';
             paletteChangeFolder.style.backgroundSize = "20px 20px";
             paletteChangeFolder.style.backgroundImage = "url('icons/edit.png')";
 
-            var measurementFolder = document.getElementsByClassName('title')[15];
+            var facadeOpacityFolder = document.getElementsByClassName('title')[23];
+            facadeOpacityFolder.style.backgroundPosition = '90% center';
+            facadeOpacityFolder.style.backgroundSize = "20px 20px";
+            facadeOpacityFolder.style.backgroundImage = "url('icons/opacity.png')";
+            facadeOpacityFolder.style.color = "#00ff00"
+
+            var measurementFolder = document.getElementsByClassName('title')[24];
             measurementFolder.style.backgroundPosition = '90% center';
             measurementFolder.style.backgroundSize = "20px 20px";
             measurementFolder.style.backgroundImage = "url('icons/measurement.png')";
             measurementFolder.style.color = "#ffee03"
             measurementFolder.style.fontWeight = "bold";
 
-            var distanceFolder = document.getElementsByClassName('title')[16];
+            var distanceFolder = document.getElementsByClassName('title')[25];
             distanceFolder.style.backgroundPosition = '90% center';
             distanceFolder.style.backgroundSize = "20px 20px";
             distanceFolder.style.backgroundImage = "url('icons/distance.png')";
@@ -3948,7 +3182,7 @@
             distanceCompute.style.backgroundColor = "#fc9272";
             distanceCompute.style.color = "#000000"
 
-            var perimeterFolder = document.getElementsByClassName('title')[18];
+            var perimeterFolder = document.getElementsByClassName('title')[27];
             perimeterFolder.style.backgroundPosition = '90% center';
             perimeterFolder.style.backgroundSize = "20px 20px";
             perimeterFolder.style.backgroundImage = "url('icons/perimeter.png')";
@@ -3962,7 +3196,7 @@
             perimeterCompute.style.backgroundColor = "#a1d99b";
             perimeterCompute.style.color = "#000000"
 
-            var areaFolder = document.getElementsByClassName('title')[19];
+            var areaFolder = document.getElementsByClassName('title')[28];
             areaFolder.style.backgroundPosition = '90% center';
             areaFolder.style.backgroundSize = "20px 20px";
             areaFolder.style.backgroundImage = "url('icons/area.png')";
@@ -3977,7 +3211,6 @@
             areaCompute.style.color = "#000000"
             ////////////
             document.getElementsByClassName('title')[12].addEventListener("click", function(){console.log("ff");});
-          
             
     </script>
 
